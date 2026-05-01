@@ -36,13 +36,13 @@
             <span class="label">Submitted</span>
             <span>{{
               application.submitted_at
-                ? new Date(application.submitted_at).toLocaleDateString()
+                ? new Date(application.submitted_at).toLocaleDateString('sk-SK')
                 : 'Not submitted'
             }}</span>
           </div>
           <div class="detail-row" v-if="application.decided_at">
             <span class="label">Decided</span>
-            <span>{{ new Date(application.decided_at).toLocaleDateString() }}</span>
+            <span>{{ new Date(application.decided_at).toLocaleDateString('sk-SK') }}</span>
           </div>
         </div>
 
