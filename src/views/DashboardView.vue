@@ -65,6 +65,14 @@
           </div>
           <span class="quick-arrow">→</span>
         </RouterLink>
+        <RouterLink v-if="isAdmin" to="/admin" class="quick-card">
+          <div class="quick-icon admin">⚙</div>
+          <div class="quick-info">
+            <h3>Admin Panel</h3>
+            <p>Manage users and approvals</p>
+          </div>
+          <span class="quick-arrow">→</span>
+        </RouterLink>
       </div>
     </div>
   </AppLayout>
@@ -80,6 +88,7 @@ import AppLayout from '../components/AppLayout.vue'
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
 const applicationCount = ref(0)
+const isAdmin = ref(false)
 
 onMounted(async () => {
   await teamsStore.fetchTeams()
@@ -89,11 +98,14 @@ onMounted(async () => {
   } catch {
     applicationCount.value = 0
   }
+
+  isAdmin.value = authStore.user?.account_type === 'nti_admin' || authStore.user?.account_type === 'superadmin'
 })
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
 .dashboard {
   max-width: 900px;
 }
@@ -137,7 +149,6 @@ onMounted(async () => {
   margin-top: 1.25rem;
 }
 
-/* Status banner */
 .status-banner {
   display: flex;
   align-items: flex-start;
@@ -169,7 +180,6 @@ onMounted(async () => {
   margin-top: 0.1rem;
 }
 
-/* Stats */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -273,6 +283,11 @@ onMounted(async () => {
 .quick-icon.applications {
   background: #f0fdf4;
   color: #22c55e;
+}
+
+.quick-icon.admin {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .quick-info {
