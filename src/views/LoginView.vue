@@ -29,7 +29,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import api from '../api/axios'
+import { authApi } from '../api/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -42,9 +42,9 @@ async function handleLogin() {
   loading.value = true
   error.value = null
   try {
-    const response = await api.post('/login', form.value)
-    authStore.setToken(response.data.token)
-    authStore.setUser(response.data.user)
+    const response = await authApi.login(form.value.email, form.value.password)
+    authStore.setToken(response.access_token)
+    authStore.setUser(response.user)
     router.push('/dashboard')
   } catch (e: any) {
     error.value = e.response?.data?.message ?? 'Login failed'
