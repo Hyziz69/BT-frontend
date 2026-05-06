@@ -48,6 +48,12 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('../views/AdminView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/invitation/accept',
+      name: 'invitation-accept',
+      component: () => import('../views/InvitationAcceptView.vue'),
       meta: { requiresAuth: false },
     },
   ],

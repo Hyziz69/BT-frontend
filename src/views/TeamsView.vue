@@ -1,55 +1,48 @@
 <template>
-  <div class="page">
-    <nav class="navbar">
-      <span class="brand">NTI Portal</span>
-      <div class="nav-links">
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/applications">Applications</RouterLink>
-        <RouterLink v-if="isAdmin" to="/admin">Admin</RouterLink>
-        <button @click="handleLogout">Logout</button>
-      </div>
-    </nav>
-
-    <div class="content">
+  <AppLayout>
+    <div class="teams">
+      <!-- Header -->
       <div class="page-header">
-        <h1>My Teams</h1>
+        <div class="header-content">
+          <h1 class="page-title">My Teams</h1>
+          <p class="page-subtitle">Manage your teams and collaborate with others.</p>
+        </div>
         <button @click="showCreateForm = true" class="btn-primary">+ Create Team</button>
       </div>
 
+      <!-- Create Team Modal -->
       <div v-if="showCreateForm" class="modal-overlay" @click.self="showCreateForm = false">
         <div class="modal">
           <h2>Create New Team</h2>
-
           <div class="field">
             <label>Team Name</label>
             <input v-model="newTeam.name" type="text" placeholder="Enter team name" />
           </div>
-
           <div class="field">
-            <label>Competencies (comma separated)</label>
+            <label>Competencies <span class="hint-text">(comma separated)</span></label>
             <input v-model="competenciesInput" type="text" placeholder="PHP, Vue.js, MySQL" />
           </div>
-
           <p v-if="teamsStore.error" class="error">{{ teamsStore.error }}</p>
-
           <div class="modal-actions">
             <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
             <button @click="handleCreate" :disabled="teamsStore.loading" class="btn-primary">
-              {{ teamsStore.loading ? 'Creating...' : 'Create' }}
+              {{ teamsStore.loading ? 'Creating...' : 'Create Team' }}
             </button>
           </div>
         </div>
       </div>
 
-      <p v-if="teamsStore.loading && !showCreateForm">Loading teams...</p>
+      <!-- Loading -->
+      <div v-if="teamsStore.loading && !showCreateForm" class="loading">Loading teams...</div>
 
-      <p v-if="teamsStore.error && !showCreateForm" class="error">{{ teamsStore.error }}</p>
-
-      <div v-if="!teamsStore.loading && teamsStore.teams.length === 0" class="empty">
+      <!-- Empty -->
+      <div v-else-if="!teamsStore.loading && teamsStore.teams.length === 0" class="empty">
+        <div class="empty-icon">◈</div>
         <p>You don't have any teams yet.</p>
         <button @click="showCreateForm = true" class="btn-primary">Create your first team</button>
       </div>
 
+      <!-- Teams Grid -->
       <div class="teams-grid">
         <div
           v-for="team in teamsStore.teams"
@@ -57,20 +50,23 @@
           class="team-card"
           @click="router.push(`/teams/${team.id}`)"
         >
+          <div class="team-card-header">
+            <div class="team-icon">◈</div>
+            <span class="member-count">{{ team.member_count }} member{{ team.member_count !== 1 ? 's' : '' }}</span>
+          </div>
           <h2>{{ team.name }}</h2>
-          <p class="members">
-            {{ team.member_count }} member{{ team.member_count !== 1 ? 's' : '' }}
-          </p>
-
+          <p class="leader">{{ team.leader.name }}</p>
           <div class="competencies">
             <span v-for="c in team.competencies" :key="c" class="tag">{{ c }}</span>
+            <span v-if="team.competencies.length === 0" class="tag-empty">No competencies</span>
           </div>
-
-          <p class="leader">Leader: {{ team.leader.name }}</p>
+          <div class="card-footer">
+            <span class="view-link">View team →</span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -78,7 +74,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeamsStore } from '../stores/teams'
 import { useAuthStore } from '../stores/auth'
-import api from '../api/axios'
+import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
 const teamsStore = useTeamsStore()
@@ -87,28 +83,10 @@ const authStore = useAuthStore()
 const showCreateForm = ref(false)
 const competenciesInput = ref('')
 const newTeam = ref({ name: '' })
-const isAdmin = ref(false)
 
-onMounted(async () => {
-  await checkAdmin()
+onMounted(() => {
   teamsStore.fetchTeams()
 })
-
-async function checkAdmin() {
-  const token = localStorage.getItem('token')
-
-  if (!token) {
-    isAdmin.value = false
-    return
-  }
-
-  try {
-    const response = await api.get('/user')
-    isAdmin.value = response.data.account_type === 'nti_admin'
-  } catch {
-    isAdmin.value = false
-  }
-}
 
 async function handleCreate() {
   const competencies = competenciesInput.value
@@ -124,64 +102,33 @@ async function handleCreate() {
     competenciesInput.value = ''
   }
 }
-
-function handleLogout() {
-  authStore.logout()
-  localStorage.removeItem('token')
-  router.push('/login')
-}
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: #f5f5f5;
-}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-.navbar {
-  background: #2c3e50;
-  color: white;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.brand {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-}
-
-.nav-links button {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.content {
-  padding: 2rem;
-}
+.teams { max-width: 900px; }
 
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 2.5rem 0 2rem 0;
+  border-bottom: 1px solid #e5e7eb;
 }
+
+.header-content { display: flex; flex-direction: column; }
+
+.page-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0f1117;
+  margin-bottom: 0.25rem;
+}
+
+.page-subtitle { color: #8892a4; font-size: 0.95rem; }
 
 .teams-grid {
   display: grid;
@@ -191,111 +138,166 @@ function handleLogout() {
 
 .team-card {
   background: white;
+  border-radius: 12px;
   padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .team-card:hover {
+  border-color: #6ee7b7;
   transform: translateY(-2px);
 }
 
-.team-card h2 {
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
+.team-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
 }
 
-.members {
-  color: #666;
-  font-size: 0.9rem;
-  margin-bottom: 0.75rem;
+.team-icon {
+  width: 36px;
+  height: 36px;
+  background: #eff6ff;
+  color: #3b82f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.member-count {
+  font-size: 0.8rem;
+  color: #8892a4;
+}
+
+.team-card h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f1117;
+  margin: 0;
+}
+
+.leader {
+  font-size: 0.85rem;
+  color: #8892a4;
+  margin: 0;
 }
 
 .competencies {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 .tag {
-  background: #eaf0fb;
-  color: #2c3e50;
+  background: #f0fdf4;
+  color: #16a34a;
   padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
-.leader {
-  color: #888;
+.tag-empty {
+  color: #d1d5db;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.card-footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.view-link {
   font-size: 0.85rem;
+  color: #6ee7b7;
+  font-weight: 600;
 }
 
 .btn-primary {
-  background: #2c3e50;
+  background: #0f1117;
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-secondary {
-  background: #eee;
-  color: #333;
+  background: #f3f4f6;
+  color: #374151;
   border: none;
   padding: 0.6rem 1.2rem;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
+  inset: 0;
+  background: rgba(0,0,0,0.4);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 10;
+  justify-content: center;
+  z-index: 100;
 }
 
 .modal {
   background: white;
   padding: 2rem;
-  border-radius: 8px;
+  border-radius: 16px;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  margin-top: 1rem;
+.modal h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f1117;
+  margin-bottom: 1.5rem;
 }
 
-.field label {
+.field { margin-bottom: 1rem; }
+
+label {
+  display: block;
   margin-bottom: 0.4rem;
-  color: #2c3e50;
   font-weight: 600;
+  font-size: 0.9rem;
+  color: #374151;
 }
 
-.field input {
-  padding: 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.hint-text { font-weight: 400; color: #9ca3af; }
+
+input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
 }
+
+input:focus { outline: none; border-color: #6ee7b7; }
 
 .modal-actions {
   display: flex;
@@ -304,18 +306,21 @@ function handleLogout() {
   margin-top: 1.5rem;
 }
 
-.error {
-  color: #e74c3c;
-  font-size: 0.9rem;
-}
+.error { color: #ef4444; font-size: 0.9rem; }
+
+.loading { color: #8892a4; padding: 2rem 0; }
 
 .empty {
   text-align: center;
-  padding: 3rem;
-  color: #666;
+  padding: 4rem 2rem;
+  color: #8892a4;
 }
 
-.empty button {
-  margin-top: 1rem;
+.empty-icon {
+  font-size: 2.5rem;
+  color: #e5e7eb;
+  margin-bottom: 1rem;
 }
+
+.empty p { margin-bottom: 1rem; }
 </style>
