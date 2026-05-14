@@ -56,10 +56,16 @@ const router = createRouter({
       component: () => import('../views/InvitationAcceptView.vue'),
       meta: { requiresAuth: false },
     },
+
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/RegisterView.vue'),
+      meta: { requiresAuth: false },
+    },
   ],
 })
 
-// Navigation guard
 router.beforeEach((to) => {
   const authStore = useAuthStore()
 

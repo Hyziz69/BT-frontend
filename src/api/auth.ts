@@ -13,4 +13,8 @@ export const authApi = {
     logout(): Promise<void> {
         return api.post('/logout').then(r => r.data)
     },
+
+    register(data: object): Promise<any> {
+        return api.post('/register', data).then(r => r.data)
+    },
 }

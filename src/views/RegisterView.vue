@@ -5,8 +5,27 @@
         <div class="brand-icon">◈</div>
         <h1>NTI Portal</h1>
       </div>
-      <h2>Sign In</h2>
-      <form @submit.prevent="handleLogin">
+      <h2>Create Account</h2>
+
+      <div v-if="success" class="success-banner">
+        <span>✓</span>
+        <div>
+          <strong>Account created!</strong>
+          <p>Check your email to verify your address. An admin will then approve your account.</p>
+        </div>
+      </div>
+
+      <form v-else @submit.prevent="handleRegister">
+        <div class="field-row">
+          <div class="field">
+            <label>First Name</label>
+            <input v-model="form.first_name" type="text" placeholder="John" required />
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <input v-model="form.last_name" type="text" placeholder="Doe" required />
+          </div>
+        </div>
         <div class="field">
           <label>Email</label>
           <input v-model="form.email" type="email" placeholder="your@email.com" required />
@@ -15,11 +34,26 @@
           <label>Password</label>
           <input v-model="form.password" type="password" placeholder="••••••••" required />
         </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input v-model="form.password_confirmation" type="password" placeholder="••••••••" required />
+        </div>
+        <div class="field">
+          <label>Account Type</label>
+          <select v-model="form.account_type">
+            <option value="student">Student</option>
+            <option value="mentor">Mentor</option>
+          </select>
+        </div>
+        <div class="field checkbox">
+          <input type="checkbox" v-model="form.gdpr_consent" id="gdpr" required />
+          <label for="gdpr">I agree to the processing of my personal data (GDPR)</label>
+        </div>
         <p v-if="error" class="error">{{ error }}</p>
         <button type="submit" :disabled="loading">
-          {{ loading ? 'Signing in...' : 'Sign In' }}
+          {{ loading ? 'Creating account...' : 'Create Account' }}
         </button>
-        <p class="auth-link">Don't have an account? <RouterLink to="/register">Sign up</RouterLink></p>
+        <p class="auth-link">Already have an account? <RouterLink to="/login">Sign in</RouterLink></p>
       </form>
     </div>
   </div>
@@ -28,25 +62,38 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import { authApi } from '../api/auth'
 
 const router = useRouter()
-const authStore = useAuthStore()
-const form = ref({ email: '', password: '' })
+
+const form = ref({
+  first_name: '',
+  last_name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+  account_type: 'student',
+  gdpr_consent: false,
+})
+
 const loading = ref(false)
 const error = ref<string | null>(null)
+const success = ref(false)
 
-async function handleLogin() {
+async function handleRegister() {
   loading.value = true
   error.value = null
   try {
-    const response = await authApi.login(form.value.email, form.value.password)
-    authStore.setToken(response.access_token)
-    authStore.setUser(response.user)
-    router.push('/dashboard')
+    await authApi.register(form.value)
+    success.value = true
+    setTimeout(() => router.push('/login'), 4000)
   } catch (e: any) {
-    error.value = e.response?.data?.message ?? 'Login failed'
+    const errors = e.response?.data?.errors
+    if (errors) {
+      error.value = Object.values(errors).flat().join(' ')
+    } else {
+      error.value = e.response?.data?.message ?? 'Registration failed'
+    }
   } finally {
     loading.value = false
   }
@@ -62,6 +109,7 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   background: #f5f7fa;
+  padding: 2rem 1rem;
 }
 
 .auth-box {
@@ -70,7 +118,7 @@ async function handleLogin() {
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
 }
 
 .brand {
@@ -108,6 +156,12 @@ h2 {
   margin: 0 0 1.5rem 0;
 }
 
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
 .field {
   margin-bottom: 1rem;
 }
@@ -120,7 +174,7 @@ label {
   color: #374151;
 }
 
-input {
+input, select {
   width: 100%;
   padding: 0.65rem 0.9rem;
   border: 1px solid #e5e7eb;
@@ -131,9 +185,30 @@ input {
   font-family: 'DM Sans', sans-serif;
 }
 
-input:focus {
+input:focus, select:focus {
   outline: none;
   border-color: #6ee7b7;
+}
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.checkbox input {
+  width: auto;
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.checkbox label {
+  margin: 0;
+  font-weight: 400;
+  font-size: 0.825rem;
+  color: #6b7280;
+  line-height: 1.4;
 }
 
 button {
@@ -146,7 +221,7 @@ button {
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   font-family: 'Plus Jakarta Sans', sans-serif;
   transition: opacity 0.15s;
 }
@@ -164,6 +239,35 @@ button:hover:not(:disabled) {
   color: #ef4444;
   font-size: 0.875rem;
   margin-bottom: 0.5rem;
+}
+
+.success-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #f0fdf4;
+  border: 1px solid #6ee7b7;
+  border-radius: 10px;
+}
+
+.success-banner span {
+  font-size: 1.25rem;
+  color: #16a34a;
+  margin-top: 0.1rem;
+}
+
+.success-banner strong {
+  display: block;
+  color: #065f46;
+  margin-bottom: 0.25rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.success-banner p {
+  color: #047857;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 .auth-link {
