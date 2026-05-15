@@ -21,11 +21,6 @@
         </button>
         <p class="auth-link">Don't have an account? <RouterLink to="/register">Sign up</RouterLink></p>
       </form>
-
-      <p class="footer-text">
-        Don’t have an account?
-        <RouterLink to="/register">Sign up</RouterLink>
-      </p>
     </div>
   </div>
 </template>
