@@ -1,35 +1,30 @@
 <template>
-  <div class="admin-page">
-    <nav class="navbar">
-      <span class="brand">NTI Portal</span>
-
-      <div class="nav-links">
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/teams">Teams</RouterLink>
-        <RouterLink to="/applications">Applications</RouterLink>
-        <button @click="handleLogout">Logout</button>
+  <AppLayout>
+    <div class="admin">
+      <!-- Header -->
+      <div class="page-header">
+        <div class="header-content">
+          <h1 class="page-title">Admin Panel</h1>
+          <p class="page-subtitle">User approvals, calls, programs, mentor assignment and reporting.</p>
+        </div>
+        <button class="btn-secondary" @click="loadAll" :disabled="loading || saving">Refresh</button>
       </div>
-    </nav>
 
-    <main class="content">
-      <div v-if="accessDenied" class="access-card">
-        <h1>403</h1>
-        <h2>Access denied</h2>
+      <!-- Access denied -->
+      <div v-if="accessDenied" class="empty">
+        <div class="empty-icon">⛔</div>
+        <h2>403 — Access denied</h2>
         <p>You do not have enough permissions to access this page.</p>
       </div>
 
-      <div v-else-if="loading" class="access-card">
-        <h2>Loading admin data...</h2>
-      </div>
+      <div v-else-if="loading" class="loading">Loading admin data...</div>
 
       <template v-else>
-        <h1>Admin Panel</h1>
-        <p class="subtitle">User approvals, calls, programs, mentor assignment and reporting</p>
+        <p v-if="error" class="banner error">{{ error }}</p>
+        <p v-if="successMessage" class="banner success">{{ successMessage }}</p>
 
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="successMessage" class="success">{{ successMessage }}</p>
-
-        <section class="stats-grid" v-if="stats">
+        <!-- Stats -->
+        <section v-if="stats" class="stats-grid">
           <div class="stat-card"><h3>Total applications</h3><p>{{ stats.total_applications }}</p></div>
           <div class="stat-card"><h3>Approved</h3><p>{{ stats.approved_applications }}</p></div>
           <div class="stat-card"><h3>Rejected</h3><p>{{ stats.rejected_applications }}</p></div>
@@ -40,6 +35,7 @@
           <div class="stat-card"><h3>Pending users</h3><p>{{ stats.pending_users_count }}</p></div>
         </section>
 
+        <!-- User approvals -->
         <section class="card">
           <h2>User approvals</h2>
 
@@ -58,272 +54,223 @@
               <option value="company_contact">Company contact</option>
               <option value="nti_admin">Admin</option>
             </select>
-            <button class="btn-secondary small" @click="loadAll">Refresh</button>
           </div>
 
-          <table v-if="filteredUsers.length">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Account type</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id">
-                <td>{{ user.first_name }} {{ user.last_name }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.account_type }}</td>
-                <td>
-                  <span class="status-badge" :class="statusClass(user.status)">
-                    {{ user.status }}
-                  </span>
-                </td>
-                <td>{{ formatDate(user.created_at) }}</td>
-                <td class="action-row">
-                  <button
-                    class="btn-success small"
-                    @click="approveUser(user.id)"
-                    :disabled="saving || user.status === 'active'"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    class="btn-danger small"
-                    @click="rejectUser(user.id)"
-                    :disabled="saving || user.status === 'suspended'"
-                  >
-                    Reject
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <p v-else>No users found.</p>
+          <div class="table-wrap" v-if="filteredUsers.length">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Account type</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in filteredUsers" :key="user.id">
+                  <td>{{ user.first_name }} {{ user.last_name }}</td>
+                  <td>{{ user.email }}</td>
+                  <td><span class="tag">{{ user.account_type }}</span></td>
+                  <td><span class="status-badge" :class="statusClass(user.status)">{{ user.status }}</span></td>
+                  <td>{{ formatDate(user.created_at) }}</td>
+                  <td class="action-row">
+                    <button class="btn-success small" @click="approveUser(user.id)" :disabled="saving || user.status === 'active'">Approve</button>
+                    <button class="btn-danger small" @click="rejectUser(user.id)" :disabled="saving || user.status === 'suspended'">Reject</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-else class="muted">No users found.</p>
         </section>
 
+        <!-- Programs -->
         <section class="grid-two">
           <div class="card">
             <h2>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h2>
 
             <div class="form-grid">
-              <label>
-                Type
+              <div class="field">
+                <label>Type</label>
                 <select v-model="programForm.type">
                   <option value="program_a">program_a</option>
                   <option value="program_b">program_b</option>
                 </select>
-              </label>
-
-              <label>
-                Name
-                <input v-model="programForm.name" type="text" />
-              </label>
-
-              <label>
-                Min team size
+              </div>
+              <div class="field">
+                <label>Name</label>
+                <input v-model="programForm.name" type="text" placeholder="Program name" />
+              </div>
+              <div class="field">
+                <label>Min team size</label>
                 <input v-model.number="programForm.min_team_size" type="number" min="1" />
-              </label>
-
-              <label>
-                Max team size
+              </div>
+              <div class="field">
+                <label>Max team size</label>
                 <input v-model.number="programForm.max_team_size" type="number" min="1" />
-              </label>
-
-              <label class="full">
-                Description
+              </div>
+              <div class="field full">
+                <label>Description</label>
                 <textarea v-model="programForm.description" rows="3" />
-              </label>
-
-              <label class="checkbox">
+              </div>
+              <label class="checkbox full">
                 <input v-model="programForm.is_active" type="checkbox" />
                 Active
               </label>
             </div>
 
             <div class="actions">
-              <button class="btn-save" @click="submitProgram" :disabled="saving">
+              <button class="btn-primary" @click="submitProgram" :disabled="saving">
                 {{ editingProgramId ? 'Update program' : 'Create program' }}
               </button>
-              <button class="btn-secondary" @click="resetProgramForm" :disabled="saving">
-                Reset
-              </button>
+              <button class="btn-secondary" @click="resetProgramForm" :disabled="saving">Reset</button>
             </div>
           </div>
 
           <div class="card">
             <h2>Programs</h2>
-
-            <table v-if="programs.length">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Active</th>
-                  <th>Calls</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="program in programs" :key="program.id">
-                  <td>{{ program.name }}</td>
-                  <td>{{ program.type }}</td>
-                  <td>{{ program.is_active ? 'yes' : 'no' }}</td>
-                  <td>{{ program.calls_count ?? 0 }}</td>
-                  <td>
-                    <button class="btn-secondary small" @click="editProgram(program)">Edit</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <p v-else>No programs found.</p>
+            <div class="table-wrap" v-if="programs.length">
+              <table>
+                <thead>
+                  <tr><th>Name</th><th>Type</th><th>Active</th><th>Calls</th><th></th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="program in programs" :key="program.id">
+                    <td>{{ program.name }}</td>
+                    <td><span class="tag">{{ program.type }}</span></td>
+                    <td>{{ program.is_active ? 'yes' : 'no' }}</td>
+                    <td>{{ program.calls_count ?? 0 }}</td>
+                    <td><button class="btn-secondary small" @click="editProgram(program)">Edit</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else class="muted">No programs found.</p>
           </div>
         </section>
 
+        <!-- Calls -->
         <section class="grid-two">
           <div class="card">
             <h2>{{ editingCallId ? 'Edit call' : 'Create call' }}</h2>
 
             <div class="form-grid">
-              <label>
-                Program
-                <select v-model="callForm.program_id">
+              <div class="field">
+                <label>Program</label>
+                <select
+                  v-model="callForm.program_id"
+                  :class="{ 'is-placeholder': !callForm.program_id }"
+                >
                   <option value="" disabled>Select program</option>
-                  <option v-for="program in programs" :key="program.id" :value="program.id">
-                    {{ program.name }}
-                  </option>
+                  <option v-for="program in programs" :key="program.id" :value="program.id">{{ program.name }}</option>
                 </select>
-              </label>
-
-              <label>
-                Title
-                <input v-model="callForm.title" type="text" />
-              </label>
-
-              <label>
-                Opens at
+              </div>
+              <div class="field">
+                <label>Title</label>
+                <input v-model="callForm.title" type="text" placeholder="Call title" />
+              </div>
+              <div class="field">
+                <label>Opens at</label>
                 <input v-model="callForm.opens_at" type="datetime-local" />
-              </label>
-
-              <label>
-                Closes at
+              </div>
+              <div class="field">
+                <label>Closes at</label>
                 <input v-model="callForm.closes_at" type="datetime-local" />
-              </label>
-
-              <label class="full">
-                Description
+              </div>
+              <div class="field full">
+                <label>Description</label>
                 <textarea v-model="callForm.description" rows="3" />
-              </label>
+              </div>
             </div>
 
             <div class="actions">
-              <button class="btn-save" @click="submitCall" :disabled="saving">
+              <button class="btn-primary" @click="submitCall" :disabled="saving">
                 {{ editingCallId ? 'Update call' : 'Create call' }}
               </button>
-              <button class="btn-secondary" @click="resetCallForm" :disabled="saving">
-                Reset
-              </button>
+              <button class="btn-secondary" @click="resetCallForm" :disabled="saving">Reset</button>
             </div>
           </div>
 
           <div class="card">
             <h2>Calls</h2>
+            <div class="table-wrap" v-if="calls.length">
+              <table>
+                <thead>
+                  <tr><th>Title</th><th>Program</th><th>Status</th><th>Apps</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="call in calls" :key="call.id">
+                    <td>{{ call.title }}</td>
+                    <td>{{ call.program?.name }}</td>
+                    <td><span class="tag">{{ call.status }}</span></td>
+                    <td>{{ call.applications_count ?? 0 }}</td>
+                    <td class="action-row">
+                      <button class="btn-secondary small" @click="editCall(call)">Edit</button>
+                      <button class="btn-success small" @click="openCall(call.id)" :disabled="call.status === 'open'">Open</button>
+                      <button class="btn-danger small" @click="closeCall(call.id)" :disabled="call.status === 'closed'">Close</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else class="muted">No calls found.</p>
+          </div>
+        </section>
 
-            <table v-if="calls.length">
+        <!-- Applications -->
+        <section class="card">
+          <h2>Applications / Assign mentor</h2>
+          <div class="table-wrap" v-if="applications.length">
+            <table>
               <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Program</th>
-                  <th>Status</th>
-                  <th>Applications</th>
-                  <th>Actions</th>
-                </tr>
+                <tr><th>Application</th><th>Team</th><th>Call</th><th>Status</th><th>Current mentors</th><th>Assign mentor</th></tr>
               </thead>
               <tbody>
-                <tr v-for="call in calls" :key="call.id">
-                  <td>{{ call.title }}</td>
-                  <td>{{ call.program?.name }}</td>
-                  <td>{{ call.status }}</td>
-                  <td>{{ call.applications_count ?? 0 }}</td>
-                  <td class="action-row">
-                    <button class="btn-secondary small" @click="editCall(call)">Edit</button>
-                    <button class="btn-success small" @click="openCall(call.id)" :disabled="call.status === 'open'">
-                      Open
-                    </button>
-                    <button class="btn-danger small" @click="closeCall(call.id)" :disabled="call.status === 'closed'">
-                      Close
+                <tr v-for="application in applications" :key="application.id">
+                  <td><span class="mono">{{ application.id }}</span></td>
+                  <td>{{ application.team?.name ?? '-' }}</td>
+                  <td>{{ application.call?.title ?? '-' }}</td>
+                  <td><span class="tag">{{ application.status }}</span></td>
+                  <td>
+                    <span v-if="application.mentorships?.length">
+                      {{ application.mentorships.map((m) => mentorName(m.mentor)).join(', ') }}
+                    </span>
+                    <span v-else class="muted">-</span>
+                  </td>
+                  <td class="assign-cell">
+                    <select
+                      v-model="selectedMentorByApplication[application.id]"
+                      :class="{ 'is-placeholder': !selectedMentorByApplication[application.id] }"
+                    >
+                      <option value="" disabled>Select mentor</option>
+                      <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">
+                        {{ mentor.first_name }} {{ mentor.last_name }}
+                      </option>
+                    </select>
+                    <button
+                      class="btn-primary small"
+                      :disabled="!selectedMentorByApplication[application.id] || saving"
+                      @click="assignMentor(application.id)"
+                    >
+                      Assign
                     </button>
                   </td>
                 </tr>
               </tbody>
             </table>
-
-            <p v-else>No calls found.</p>
           </div>
-        </section>
-
-        <section class="card">
-          <h2>Applications / Assign mentor</h2>
-
-          <table v-if="applications.length">
-            <thead>
-              <tr>
-                <th>Application</th>
-                <th>Team</th>
-                <th>Call</th>
-                <th>Status</th>
-                <th>Current mentors</th>
-                <th>Assign mentor</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="application in applications" :key="application.id">
-                <td>{{ application.id }}</td>
-                <td>{{ application.team?.name ?? '-' }}</td>
-                <td>{{ application.call?.title ?? '-' }}</td>
-                <td>{{ application.status }}</td>
-                <td>
-                  <span v-if="application.mentorships?.length">
-                    {{ application.mentorships.map((m) => mentorName(m.mentor)).join(', ') }}
-                  </span>
-                  <span v-else>-</span>
-                </td>
-                <td class="assign-cell">
-                  <select v-model="selectedMentorByApplication[application.id]">
-                    <option value="">Select mentor</option>
-                    <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">
-                      {{ mentor.first_name }} {{ mentor.last_name }}
-                    </option>
-                  </select>
-
-                  <button
-                    class="btn-save small"
-                    :disabled="!selectedMentorByApplication[application.id] || saving"
-                    @click="assignMentor(application.id)"
-                  >
-                    Assign
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <p v-else>No applications found.</p>
+          <p v-else class="muted">No applications found.</p>
         </section>
       </template>
-    </main>
-  </div>
+    </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import {
   adminApi,
   type AdminApplication,
@@ -333,6 +280,7 @@ import {
   type AdminUser,
 } from '../api/admin'
 import { useAuthStore } from '../stores/auth'
+import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -393,12 +341,6 @@ const callForm = ref({
   opens_at: '',
   closes_at: '',
 })
-
-function handleLogout() {
-  authStore.logout()
-  localStorage.removeItem('token')
-  router.push('/login')
-}
 
 function mentorName(mentor: any) {
   if (!mentor) return '-'
@@ -480,14 +422,12 @@ function handleApiError(e: any) {
     error.value = e.response?.data?.message ?? 'Access denied.'
     return
   }
-
   if (e.response?.status === 401) {
     authStore.logout()
     localStorage.removeItem('token')
     router.replace('/login')
     return
   }
-
   error.value = e.response?.data?.message ?? 'Request failed.'
 }
 
@@ -505,7 +445,6 @@ async function loadAll() {
       adminApi.getCalls(),
       adminApi.getApplications(),
     ])
-
     stats.value = dashboard
     users.value = allUsers
     programs.value = allPrograms
@@ -519,52 +458,27 @@ async function loadAll() {
 }
 
 async function approveUser(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
+  error.value = null; successMessage.value = null; saving.value = true
   try {
     const response = await adminApi.approveUser(id)
-
-    users.value = users.value.map((user) =>
-      user.id === id ? { ...user, status: 'active' } : user,
-    )
-
+    users.value = users.value.map((u) => (u.id === id ? { ...u, status: 'active' } : u))
     successMessage.value = response.message ?? 'User approved successfully.'
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
 async function rejectUser(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
+  error.value = null; successMessage.value = null; saving.value = true
   try {
     const response = await adminApi.rejectUser(id)
-
-    users.value = users.value.map((user) =>
-      user.id === id ? { ...user, status: 'suspended' } : user,
-    )
-
+    users.value = users.value.map((u) => (u.id === id ? { ...u, status: 'suspended' } : u))
     successMessage.value = response.message ?? 'User rejected successfully.'
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
 async function submitProgram() {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
+  error.value = null; successMessage.value = null; saving.value = true
   try {
     if (editingProgramId.value) {
       await adminApi.updateProgram(editingProgramId.value, programForm.value)
@@ -573,21 +487,13 @@ async function submitProgram() {
       await adminApi.createProgram(programForm.value)
       successMessage.value = 'Program created successfully.'
     }
-
     resetProgramForm()
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
 async function submitCall() {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
+  error.value = null; successMessage.value = null; saving.value = true
   const payload = {
     program_id: callForm.value.program_id,
     title: callForm.value.title,
@@ -595,7 +501,6 @@ async function submitCall() {
     opens_at: toApiDate(callForm.value.opens_at),
     closes_at: toApiDate(callForm.value.closes_at),
   }
-
   try {
     if (editingCallId.value) {
       await adminApi.updateCall(editingCallId.value, payload)
@@ -604,162 +509,115 @@ async function submitCall() {
       await adminApi.createCall(payload)
       successMessage.value = 'Call created successfully.'
     }
-
     resetCallForm()
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
 async function openCall(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  try {
-    await adminApi.openCall(id)
-    successMessage.value = 'Call opened successfully.'
-    await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  error.value = null; successMessage.value = null; saving.value = true
+  try { await adminApi.openCall(id); successMessage.value = 'Call opened successfully.'; await loadAll() }
+  catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
 async function closeCall(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  try {
-    await adminApi.closeCall(id)
-    successMessage.value = 'Call closed successfully.'
-    await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  error.value = null; successMessage.value = null; saving.value = true
+  try { await adminApi.closeCall(id); successMessage.value = 'Call closed successfully.'; await loadAll() }
+  catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
 async function assignMentor(applicationId: string) {
   const mentorId = selectedMentorByApplication.value[applicationId]
   if (!mentorId) return
-
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
+  error.value = null; successMessage.value = null; saving.value = true
   try {
     await adminApi.assignMentor(applicationId, mentorId)
     successMessage.value = 'Mentor assigned successfully.'
     selectedMentorByApplication.value[applicationId] = ''
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
 }
 
-onMounted(async () => {
-  await loadAll()
-})
+onMounted(async () => { await loadAll() })
 </script>
 
 <style scoped>
-.admin-page {
-  min-height: 100vh;
-  background: #f5f5f5;
-}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-.navbar {
-  background: #2c3e50;
-  color: white;
-  padding: 1rem 2rem;
+.admin { max-width: 1280px; font-family: 'DM Sans', sans-serif; color: #0f1117; }
+
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-}
-
-.brand {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-}
-
-.nav-links button {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.content {
-  padding: 2rem;
-}
-
-.subtitle {
-  color: #666;
+  align-items: flex-start;
   margin-bottom: 1.5rem;
+  padding: 2rem 0 1.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
 }
+.page-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.page-subtitle { color: #8892a4; font-size: 0.95rem; }
 
-.card,
-.access-card {
-  background: white;
-  padding: 1.25rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+.banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
   margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
+.banner.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.banner.success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
-
 .stat-card {
   background: white;
-  border-radius: 10px;
-  padding: 1rem 1.2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-
 .stat-card h3 {
-  margin: 0 0 0.5rem;
-  color: #2c3e50;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8892a4;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.stat-card p {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f1117;
 }
 
-.stat-card p {
-  margin: 0;
-  font-size: 1.8rem;
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  margin-bottom: 1.25rem;
+}
+.card h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem;
   font-weight: 700;
+  margin-bottom: 1rem;
 }
 
 .grid-two {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-grid {
@@ -767,151 +625,165 @@ onMounted(async () => {
   grid-template-columns: 1fr 1fr;
   gap: 0.9rem;
 }
-
-.form-grid .full {
-  grid-column: 1 / -1;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+.field { display: flex; flex-direction: column; }
+.field.full, .checkbox.full { grid-column: 1 / -1; }
+.field label {
+  margin-bottom: 0.4rem;
   font-weight: 600;
-  color: #2c3e50;
+  font-size: 0.85rem;
+  color: #374151;
 }
 
-input,
-select,
-textarea {
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #d5dbe3;
+input, textarea, select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  font: inherit;
+  font-size: 0.92rem;
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  color: #0f1117;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
 }
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #6ee7b7;
+}
+
+/* Custom dropdown */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238892a4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+  cursor: pointer;
+}
+
+/* Greys placeholder text in selects when nothing is chosen */
+select.is-placeholder { color: #8892a4; }
+select option { color: #0f1117; }
+select option[disabled] { color: #8892a4; }
 
 .checkbox {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 500;
 }
+.checkbox input { width: auto; }
 
-.actions,
 .filters {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.filters input { flex: 1; min-width: 220px; }
+.filters select { width: auto; min-width: 160px; }
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
   flex-wrap: wrap;
 }
 
-.filters {
-  margin-bottom: 1rem;
-}
-
-.btn-save,
-.btn-secondary,
-.btn-success,
-.btn-danger {
+.btn-primary, .btn-secondary, .btn-success, .btn-danger {
   border: none;
   border-radius: 8px;
-  padding: 0.65rem 0.95rem;
+  padding: 0.6rem 1.1rem;
   cursor: pointer;
-  color: white;
-}
-
-.btn-save {
-  background: #2c3e50;
-}
-
-.btn-secondary {
-  background: #7f8c8d;
-}
-
-.btn-success {
-  background: #27ae60;
-}
-
-.btn-danger {
-  background: #c0392b;
-}
-
-.small {
-  padding: 0.45rem 0.7rem;
   font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: opacity 0.15s, background 0.15s;
 }
+.btn-primary { background: #0f1117; color: white; }
+.btn-secondary { background: #f3f4f6; color: #374151; }
+.btn-success { background: #16a34a; color: white; }
+.btn-danger { background: #dc2626; color: white; }
+.btn-primary:hover:not(:disabled),
+.btn-success:hover:not(:disabled),
+.btn-danger:hover:not(:disabled) { opacity: 0.88; }
+.btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
+.btn-primary:disabled, .btn-secondary:disabled,
+.btn-success:disabled, .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+.small { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
 
+.table-wrap { overflow-x: auto; }
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  font-size: 0.9rem;
 }
-
-th,
-td {
+th, td {
   text-align: left;
-  padding: 0.75rem;
-  border-bottom: 1px solid #e6e6e6;
-  vertical-align: top;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
 }
-
 th {
-  background: #2c3e50;
-  color: white;
+  background: #fafafa;
+  color: #8892a4;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e5e7eb;
 }
+tbody tr:hover { background: #fafbfc; }
 
-.action-row,
-.assign-cell {
+.action-row, .assign-cell {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
   flex-wrap: wrap;
+}
+.assign-cell select { min-width: 160px; }
+
+.tag {
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
 }
 
 .status-badge {
   display: inline-block;
   border-radius: 999px;
-  padding: 0.25rem 0.65rem;
-  font-size: 0.85rem;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.78rem;
   font-weight: 600;
+  text-transform: capitalize;
 }
+.status-active { background: #f0fdf4; color: #16a34a; }
+.status-pending { background: #fef3c7; color: #b45309; }
+.status-rejected { background: #fef2f2; color: #dc2626; }
+.status-default { background: #f3f4f6; color: #6b7280; }
 
-.status-active {
-  background: #d4edda;
-  color: #1e8449;
-}
+.muted { color: #8892a4; font-size: 0.9rem; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: #6b7280; }
+.loading { color: #8892a4; padding: 2rem 0; }
 
-.status-pending {
-  background: #e5e7eb;
-  color: #4b5563;
-}
-
-.status-rejected {
-  background: #fde2e2;
-  color: #c0392b;
-}
-
-.status-default {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.error {
-  color: #c0392b;
-  margin-bottom: 1rem;
-}
-
-.success {
-  color: #1e8449;
-  margin-bottom: 1rem;
+.empty { text-align: center; padding: 4rem 2rem; color: #8892a4; }
+.empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.empty h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0f1117;
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 1100px) {
-  .stats-grid,
-  .grid-two {
-    grid-template-columns: 1fr;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
+  .grid-two, .form-grid { grid-template-columns: 1fr; }
 }
 </style>
