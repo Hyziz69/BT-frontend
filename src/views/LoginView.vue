@@ -21,13 +21,18 @@
         </button>
         <p class="auth-link">Don't have an account? <RouterLink to="/register">Sign up</RouterLink></p>
       </form>
+
+      <p class="footer-text">
+        Don’t have an account?
+        <RouterLink to="/register">Sign up</RouterLink>
+      </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { authApi } from '../api/auth'
 
@@ -40,13 +45,14 @@ const error = ref<string | null>(null)
 async function handleLogin() {
   loading.value = true
   error.value = null
+
   try {
     const response = await authApi.login(form.value.email, form.value.password)
     authStore.setToken(response.access_token)
     authStore.setUser(response.user)
     router.push('/dashboard')
   } catch (e: any) {
-    error.value = e.response?.data?.message ?? 'Login failed'
+    error.value = e.response?.data?.message ?? 'Login failed.'
   } finally {
     loading.value = false
   }
@@ -155,7 +161,6 @@ button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
 button:hover:not(:disabled) {
   opacity: 0.9;
 }

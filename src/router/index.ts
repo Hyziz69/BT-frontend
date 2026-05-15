@@ -15,6 +15,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/RegisterView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
@@ -49,14 +55,13 @@ const router = createRouter({
       name: 'admin',
       component: () => import('../views/AdminView.vue'),
       meta: { requiresAuth: true },
-    },
+},
     {
       path: '/invitation/accept',
       name: 'invitation-accept',
       component: () => import('../views/InvitationAcceptView.vue'),
       meta: { requiresAuth: false },
     },
-
     {
       path: '/register',
       name: 'register',
@@ -73,7 +78,7 @@ router.beforeEach((to) => {
     return { name: 'login' }
   }
 
-  if (to.name === 'login' && authStore.isAuthenticated) {
+  if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
     return { name: 'dashboard' }
   }
 })
