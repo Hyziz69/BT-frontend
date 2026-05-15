@@ -4,7 +4,7 @@ import type { User } from '../types'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('token'))
-  const user = ref<User | null>(null)
+  const user = ref<User | null>(JSON.parse(localStorage.getItem('user') ?? 'null'))
 
   const isAuthenticated = computed(() => !!token.value)
   const isStudent = computed(() => user.value?.account_type === 'student')
@@ -21,12 +21,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(newUser: User) {
     user.value = newUser
+    localStorage.setItem('user', JSON.stringify(newUser))
   }
 
   function logout() {
     token.value = null
     user.value = null
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
   }
 
   return {

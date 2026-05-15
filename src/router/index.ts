@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTransition } from '../composables/useTransition'
-import LandingView from '../views/LandingView.vue' // eager — no white flash on first load
+import LandingView from '../views/LandingView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,6 +17,18 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('../views/RegisterView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/invitation/accept',
+      name: 'invitation-accept',
+      component: () => import('../views/InvitationAcceptView.vue'),
       meta: { requiresAuth: false },
     },
     {
@@ -65,7 +77,7 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('../views/AdminView.vue'),
-      meta: { requiresAuth: false },
+      meta: { requiresAuth: true },
     },
   ],
 })
@@ -74,18 +86,17 @@ router.beforeEach((to, from) => {
   const authStore = useAuthStore()
   const { targetPath, shouldAnimate } = useTransition()
 
-  // Анімація тільки між гостьовими сторінками (обидві requiresAuth: false)
   targetPath.value = to.path
   shouldAnimate.value =
     to.meta.requiresAuth === false &&
     from.meta.requiresAuth === false &&
-    !!from.name // не на першому завантаженні
+    !!from.name
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login' }
   }
 
-  if (to.name === 'login' && authStore.isAuthenticated) {
+  if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
     return { name: 'dashboard' }
   }
 })
