@@ -61,10 +61,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { authApi } from '../api/auth'
 
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   first_name: '',
@@ -86,7 +87,8 @@ async function handleRegister() {
   try {
     await authApi.register(form.value)
     success.value = true
-    setTimeout(() => router.push('/login'), 4000)
+    const redirect = route.query.redirect as string | undefined
+    setTimeout(() => router.push(redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'), 4000)
   } catch (e: any) {
     const errors = e.response?.data?.errors
     if (errors) {

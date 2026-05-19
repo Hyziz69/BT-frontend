@@ -24,6 +24,10 @@
           <span class="nav-icon">★</span>
           <span>Admin</span>
         </RouterLink>
+        <RouterLink to="/profile" class="nav-item">
+          <span class="nav-icon">◉</span>
+          <span>Profile</span>
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">

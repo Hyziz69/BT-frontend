@@ -26,6 +26,24 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../views/ForgotPasswordView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('../views/ResetPasswordView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: () => import('../views/VerifyEmailView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/invitation/accept',
       name: 'invitation-accept',
       component: () => import('../views/InvitationAcceptView.vue'),
@@ -71,6 +89,12 @@ const router = createRouter({
       path: '/applications/:id',
       name: 'application-detail',
       component: () => import('../views/ApplicationDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
       meta: { requiresAuth: true },
     },
     {

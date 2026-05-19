@@ -33,4 +33,33 @@ export const authApi = {
   logout(): Promise<void> {
     return api.post('/logout').then((r) => r.data)
   },
+
+  forgotPassword(email: string): Promise<{ message: string }> {
+    return api.post('/password/reset', { email }).then((r) => r.data)
+  },
+
+  resetPassword(payload: {
+    token: string
+    email: string
+    password: string
+    password_confirmation: string
+  }): Promise<{ message: string }> {
+    return api.post('/password/reset/confirm', payload).then((r) => r.data)
+  },
+
+  verifyEmail(id: string, hash: string, expires: string, signature: string): Promise<{ message: string }> {
+    return api.get(`/email/verify/${id}/${hash}`, { params: { expires, signature } }).then((r) => r.data)
+  },
+
+  resendVerification(email: string): Promise<{ message: string }> {
+    return api.post('/email/verify/resend', { email }).then((r) => r.data)
+  },
+
+  changePassword(payload: {
+    current_password: string
+    password: string
+    password_confirmation: string
+  }): Promise<{ message: string }> {
+    return api.patch('/user/password', payload).then((r) => r.data)
+  },
 }

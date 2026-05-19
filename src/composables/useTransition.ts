@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 // Singleton refs — zdieľané medzi App.vue, router a nav komponentmi
-const enabled = ref(localStorage.getItem('nti_anim') !== '0')
+const enabled = ref(localStorage.getItem('nti_anim') === '1')
 const targetPath = ref('/')
 const shouldAnimate = ref(false)
 
