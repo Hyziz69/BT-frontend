@@ -37,7 +37,12 @@
 
         <!-- User approvals -->
         <section class="card">
-          <h2>User approvals</h2>
+          <div class="section-heading">
+            <div>
+              <h2>User approvals</h2>
+              <p>Review registered users and manage access.</p>
+            </div>
+          </div>
 
           <div class="filters">
             <input v-model="userSearch" type="text" placeholder="Search by name or email" />
@@ -75,21 +80,52 @@
                   <td><span class="tag">{{ user.account_type }}</span></td>
                   <td><span class="status-badge" :class="statusClass(user.status)">{{ user.status }}</span></td>
                   <td>{{ formatDate(user.created_at) }}</td>
-                  <td class="action-row">
-                    <button class="btn-success small" @click="approveUser(user.id)" :disabled="saving || user.status === 'active'">Approve</button>
-                    <button class="btn-danger small" @click="rejectUser(user.id)" :disabled="saving || user.status === 'suspended'">Reject</button>
+                  <td>
+                    <div class="user-actions">
+                      <button
+                        v-if="user.status !== 'active'"
+                        class="action-pill approve"
+                        @click="approveUser(user.id)"
+                        :disabled="saving"
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        v-if="user.status !== 'suspended'"
+                        class="action-pill reject"
+                        @click="rejectUser(user.id)"
+                        :disabled="saving"
+                      >
+                        Reject
+                      </button>
+
+                      <button
+                        class="action-pill delete"
+                        @click="deleteUser(user)"
+                        :disabled="saving || isCurrentUser(user)"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
+
           <p v-else class="muted">No users found.</p>
         </section>
 
         <!-- Programs -->
         <section class="grid-two">
           <div class="card">
-            <h2>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h2>
+            <div class="section-heading">
+              <div>
+                <h2>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h2>
+                <p>Configure available programs for participants.</p>
+              </div>
+            </div>
 
             <div class="form-grid">
               <div class="field">
@@ -99,22 +135,27 @@
                   <option value="program_b">program_b</option>
                 </select>
               </div>
+
               <div class="field">
                 <label>Name</label>
                 <input v-model="programForm.name" type="text" placeholder="Program name" />
               </div>
+
               <div class="field">
                 <label>Min team size</label>
                 <input v-model.number="programForm.min_team_size" type="number" min="1" />
               </div>
+
               <div class="field">
                 <label>Max team size</label>
                 <input v-model.number="programForm.max_team_size" type="number" min="1" />
               </div>
+
               <div class="field full">
                 <label>Description</label>
                 <textarea v-model="programForm.description" rows="3" />
               </div>
+
               <label class="checkbox full">
                 <input v-model="programForm.is_active" type="checkbox" />
                 Active
@@ -130,12 +171,25 @@
           </div>
 
           <div class="card">
-            <h2>Programs</h2>
+            <div class="section-heading">
+              <div>
+                <h2>Programs</h2>
+                <p>Existing program list.</p>
+              </div>
+            </div>
+
             <div class="table-wrap" v-if="programs.length">
               <table>
                 <thead>
-                  <tr><th>Name</th><th>Type</th><th>Active</th><th>Calls</th><th></th></tr>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Active</th>
+                    <th>Calls</th>
+                    <th></th>
+                  </tr>
                 </thead>
+
                 <tbody>
                   <tr v-for="program in programs" :key="program.id">
                     <td>{{ program.name }}</td>
@@ -147,6 +201,7 @@
                 </tbody>
               </table>
             </div>
+
             <p v-else class="muted">No programs found.</p>
           </div>
         </section>
@@ -154,7 +209,12 @@
         <!-- Calls -->
         <section class="grid-two">
           <div class="card">
-            <h2>{{ editingCallId ? 'Edit call' : 'Create call' }}</h2>
+            <div class="section-heading">
+              <div>
+                <h2>{{ editingCallId ? 'Edit call' : 'Create call' }}</h2>
+                <p>Create and schedule program calls.</p>
+              </div>
+            </div>
 
             <div class="form-grid">
               <div class="field">
@@ -164,21 +224,27 @@
                   :class="{ 'is-placeholder': !callForm.program_id }"
                 >
                   <option value="" disabled>Select program</option>
-                  <option v-for="program in programs" :key="program.id" :value="program.id">{{ program.name }}</option>
+                  <option v-for="program in programs" :key="program.id" :value="program.id">
+                    {{ program.name }}
+                  </option>
                 </select>
               </div>
+
               <div class="field">
                 <label>Title</label>
                 <input v-model="callForm.title" type="text" placeholder="Call title" />
               </div>
+
               <div class="field">
                 <label>Opens at</label>
                 <input v-model="callForm.opens_at" type="datetime-local" />
               </div>
+
               <div class="field">
                 <label>Closes at</label>
                 <input v-model="callForm.closes_at" type="datetime-local" />
               </div>
+
               <div class="field full">
                 <label>Description</label>
                 <textarea v-model="callForm.description" rows="3" />
@@ -194,12 +260,25 @@
           </div>
 
           <div class="card">
-            <h2>Calls</h2>
+            <div class="section-heading">
+              <div>
+                <h2>Calls</h2>
+                <p>Open, close and edit calls.</p>
+              </div>
+            </div>
+
             <div class="table-wrap" v-if="calls.length">
               <table>
                 <thead>
-                  <tr><th>Title</th><th>Program</th><th>Status</th><th>Apps</th><th>Actions</th></tr>
+                  <tr>
+                    <th>Title</th>
+                    <th>Program</th>
+                    <th>Status</th>
+                    <th>Apps</th>
+                    <th>Actions</th>
+                  </tr>
                 </thead>
+
                 <tbody>
                   <tr v-for="call in calls" :key="call.id">
                     <td>{{ call.title }}</td>
@@ -215,18 +294,33 @@
                 </tbody>
               </table>
             </div>
+
             <p v-else class="muted">No calls found.</p>
           </div>
         </section>
 
         <!-- Applications -->
         <section class="card">
-          <h2>Applications / Assign mentor</h2>
+          <div class="section-heading">
+            <div>
+              <h2>Applications / Assign mentor</h2>
+              <p>Attach active mentors to submitted applications.</p>
+            </div>
+          </div>
+
           <div class="table-wrap" v-if="applications.length">
             <table>
               <thead>
-                <tr><th>Application</th><th>Team</th><th>Call</th><th>Status</th><th>Current mentors</th><th>Assign mentor</th></tr>
+                <tr>
+                  <th>Application</th>
+                  <th>Team</th>
+                  <th>Call</th>
+                  <th>Status</th>
+                  <th>Current mentors</th>
+                  <th>Assign mentor</th>
+                </tr>
               </thead>
+
               <tbody>
                 <tr v-for="application in applications" :key="application.id">
                   <td><span class="mono">{{ application.id }}</span></td>
@@ -261,9 +355,57 @@
               </tbody>
             </table>
           </div>
+
           <p v-else class="muted">No applications found.</p>
         </section>
       </template>
+
+      <!-- Delete modal -->
+      <div v-if="deleteModalOpen && userToDelete" class="modal-backdrop" @click.self="closeDeleteModal">
+        <div class="delete-modal">
+          <div class="modal-icon">!</div>
+
+          <h3>Delete user?</h3>
+
+          <p class="modal-text">
+            You are going to permanently delete this account. This action cannot be undone.
+            Admins will receive an email notification about this deletion.
+          </p>
+
+          <div class="delete-user-box">
+            <p><strong>Name:</strong> {{ userToDelete.first_name }} {{ userToDelete.last_name }}</p>
+            <p><strong>Email:</strong> {{ userToDelete.email }}</p>
+            <p><strong>Type:</strong> {{ userToDelete.account_type }}</p>
+            <p><strong>Status:</strong> {{ userToDelete.status }}</p>
+          </div>
+
+          <label class="delete-confirm-label">
+            Type <strong>delete</strong> to confirm
+          </label>
+
+          <input
+            v-model="deleteConfirmationText"
+            class="delete-confirm-input"
+            type="text"
+            placeholder="delete"
+            autocomplete="off"
+          />
+
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="closeDeleteModal" :disabled="saving">
+              Cancel
+            </button>
+
+            <button
+              class="btn-danger"
+              @click="confirmDeleteUser"
+              :disabled="saving || deleteConfirmationText.trim().toLowerCase() !== 'delete'"
+            >
+              Yes, delete
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -305,6 +447,10 @@ const selectedMentorByApplication = ref<Record<string, string>>({})
 const userSearch = ref('')
 const userStatusFilter = ref('')
 const userTypeFilter = ref('')
+
+const deleteModalOpen = ref(false)
+const userToDelete = ref<AdminUser | null>(null)
+const deleteConfirmationText = ref('')
 
 const mentors = computed(() =>
   users.value.filter((user) => user.account_type === 'mentor' && user.status === 'active'),
@@ -356,6 +502,10 @@ function statusClass(status: string) {
   if (status === 'pending') return 'status-pending'
   if (status === 'suspended') return 'status-rejected'
   return 'status-default'
+}
+
+function isCurrentUser(user: AdminUser) {
+  return authStore.user?.id === user.id
 }
 
 function formatDateTimeLocal(value: string | null) {
@@ -422,12 +572,14 @@ function handleApiError(e: any) {
     error.value = e.response?.data?.message ?? 'Access denied.'
     return
   }
+
   if (e.response?.status === 401) {
     authStore.logout()
     localStorage.removeItem('token')
     router.replace('/login')
     return
   }
+
   error.value = e.response?.data?.message ?? 'Request failed.'
 }
 
@@ -445,6 +597,7 @@ async function loadAll() {
       adminApi.getCalls(),
       adminApi.getApplications(),
     ])
+
     stats.value = dashboard
     users.value = allUsers
     programs.value = allPrograms
@@ -458,27 +611,102 @@ async function loadAll() {
 }
 
 async function approveUser(id: string) {
-  error.value = null; successMessage.value = null; saving.value = true
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
   try {
     const response = await adminApi.approveUser(id)
     users.value = users.value.map((u) => (u.id === id ? { ...u, status: 'active' } : u))
     successMessage.value = response.message ?? 'User approved successfully.'
     await loadAll()
-  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function rejectUser(id: string) {
-  error.value = null; successMessage.value = null; saving.value = true
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
   try {
     const response = await adminApi.rejectUser(id)
     users.value = users.value.map((u) => (u.id === id ? { ...u, status: 'suspended' } : u))
     successMessage.value = response.message ?? 'User rejected successfully.'
     await loadAll()
-  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+function deleteUser(user: AdminUser) {
+  error.value = null
+  successMessage.value = null
+
+  if (isCurrentUser(user)) {
+    error.value = 'You cannot delete your own admin account.'
+    return
+  }
+
+  userToDelete.value = user
+  deleteConfirmationText.value = ''
+  deleteModalOpen.value = true
+}
+
+function closeDeleteModal() {
+  if (saving.value) {
+    return
+  }
+
+  deleteModalOpen.value = false
+  userToDelete.value = null
+  deleteConfirmationText.value = ''
+}
+
+async function confirmDeleteUser() {
+  if (!userToDelete.value) {
+    return
+  }
+
+  if (deleteConfirmationText.value.trim().toLowerCase() !== 'delete') {
+    error.value = 'Type "delete" to confirm deletion.'
+    return
+  }
+
+  const deletingUserId = userToDelete.value.id
+
+  saving.value = true
+  error.value = null
+  successMessage.value = null
+
+  try {
+    const response = await adminApi.deleteUser(deletingUserId)
+
+    users.value = users.value.filter((u) => u.id !== deletingUserId)
+    successMessage.value = response.message ?? 'User deleted successfully.'
+
+    deleteModalOpen.value = false
+    userToDelete.value = null
+    deleteConfirmationText.value = ''
+
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function submitProgram() {
-  error.value = null; successMessage.value = null; saving.value = true
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
   try {
     if (editingProgramId.value) {
       await adminApi.updateProgram(editingProgramId.value, programForm.value)
@@ -487,13 +715,21 @@ async function submitProgram() {
       await adminApi.createProgram(programForm.value)
       successMessage.value = 'Program created successfully.'
     }
+
     resetProgramForm()
     await loadAll()
-  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function submitCall() {
-  error.value = null; successMessage.value = null; saving.value = true
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
   const payload = {
     program_id: callForm.value.program_id,
     title: callForm.value.title,
@@ -501,6 +737,7 @@ async function submitCall() {
     opens_at: toApiDate(callForm.value.opens_at),
     closes_at: toApiDate(callForm.value.closes_at),
   }
+
   try {
     if (editingCallId.value) {
       await adminApi.updateCall(editingCallId.value, payload)
@@ -509,42 +746,82 @@ async function submitCall() {
       await adminApi.createCall(payload)
       successMessage.value = 'Call created successfully.'
     }
+
     resetCallForm()
     await loadAll()
-  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function openCall(id: string) {
-  error.value = null; successMessage.value = null; saving.value = true
-  try { await adminApi.openCall(id); successMessage.value = 'Call opened successfully.'; await loadAll() }
-  catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
+  try {
+    await adminApi.openCall(id)
+    successMessage.value = 'Call opened successfully.'
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function closeCall(id: string) {
-  error.value = null; successMessage.value = null; saving.value = true
-  try { await adminApi.closeCall(id); successMessage.value = 'Call closed successfully.'; await loadAll() }
-  catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
+  try {
+    await adminApi.closeCall(id)
+    successMessage.value = 'Call closed successfully.'
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
 async function assignMentor(applicationId: string) {
   const mentorId = selectedMentorByApplication.value[applicationId]
+
   if (!mentorId) return
-  error.value = null; successMessage.value = null; saving.value = true
+
+  error.value = null
+  successMessage.value = null
+  saving.value = true
+
   try {
     await adminApi.assignMentor(applicationId, mentorId)
     successMessage.value = 'Mentor assigned successfully.'
     selectedMentorByApplication.value[applicationId] = ''
     await loadAll()
-  } catch (e: any) { handleApiError(e) } finally { saving.value = false }
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
 }
 
-onMounted(async () => { await loadAll() })
+onMounted(async () => {
+  await loadAll()
+})
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-.admin { max-width: 1280px; font-family: 'DM Sans', sans-serif; color: #0f1117; }
+.admin {
+  max-width: 1280px;
+  font-family: 'DM Sans', sans-serif;
+  color: #0f172a;
+}
 
 .page-header {
   display: flex;
@@ -552,24 +829,42 @@ onMounted(async () => { await loadAll() })
   align-items: flex-start;
   margin-bottom: 1.5rem;
   padding: 2rem 0 1.5rem 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e2e8f0;
 }
+
 .page-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 0.25rem;
+  letter-spacing: -0.04em;
+  color: #0f172a;
 }
-.page-subtitle { color: #8892a4; font-size: 0.95rem; }
+
+.page-subtitle {
+  color: #64748b;
+  font-size: 0.95rem;
+}
 
 .banner {
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
+  border: 1px solid transparent;
 }
-.banner.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-.banner.success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+.banner.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.banner.success {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
 
 .stats-grid {
   display: grid;
@@ -577,40 +872,62 @@ onMounted(async () => { await loadAll() })
   gap: 1rem;
   margin-bottom: 2rem;
 }
+
 .stat-card {
-  background: white;
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
   padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
 }
+
 .stat-card h3 {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #8892a4;
-  margin: 0 0 0.5rem 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #64748b;
+  margin: 0 0 0.55rem 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
+
 .stat-card p {
   font-family: 'Plus Jakarta Sans', sans-serif;
   margin: 0;
   font-size: 1.75rem;
-  font-weight: 700;
-  color: #0f1117;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.04em;
 }
 
 .card {
-  background: white;
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
   margin-bottom: 1.25rem;
 }
-.card h2 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 700;
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.section-heading h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.12rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.section-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.88rem;
 }
 
 .grid-two {
@@ -625,48 +942,69 @@ onMounted(async () => { await loadAll() })
   grid-template-columns: 1fr 1fr;
   gap: 0.9rem;
 }
-.field { display: flex; flex-direction: column; }
-.field.full, .checkbox.full { grid-column: 1 / -1; }
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field.full,
+.checkbox.full {
+  grid-column: 1 / -1;
+}
+
 .field label {
   margin-bottom: 0.4rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: #374151;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #334155;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   width: 100%;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 0.66rem 0.85rem;
+  border: 1px solid #dbe3eb;
+  border-radius: 12px;
   font-size: 0.92rem;
   font-family: 'DM Sans', sans-serif;
-  background: #fff;
-  color: #0f1117;
+  background: #ffffff;
+  color: #0f172a;
   box-sizing: border-box;
-  transition: border-color 0.15s;
-}
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: #6ee7b7;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-/* Custom dropdown */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
 select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238892a4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.25rem;
   cursor: pointer;
 }
 
-/* Greys placeholder text in selects when nothing is chosen */
-select.is-placeholder { color: #8892a4; }
-select option { color: #0f1117; }
-select option[disabled] { color: #8892a4; }
+select.is-placeholder {
+  color: #94a3b8;
+}
+
+select option {
+  color: #0f172a;
+}
+
+select option[disabled] {
+  color: #94a3b8;
+}
 
 .checkbox {
   display: flex;
@@ -674,19 +1012,30 @@ select option[disabled] { color: #8892a4; }
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #374151;
-  font-weight: 500;
+  color: #334155;
+  font-weight: 600;
 }
-.checkbox input { width: auto; }
+
+.checkbox input {
+  width: auto;
+}
 
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.7rem;
   margin-bottom: 1rem;
 }
-.filters input { flex: 1; min-width: 220px; }
-.filters select { width: auto; min-width: 160px; }
+
+.filters input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.filters select {
+  width: auto;
+  min-width: 160px;
+}
 
 .actions {
   display: flex;
@@ -695,95 +1044,360 @@ select option[disabled] { color: #8892a4; }
   flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary, .btn-success, .btn-danger {
-  border: none;
-  border-radius: 8px;
-  padding: 0.6rem 1.1rem;
+.btn-primary,
+.btn-secondary,
+.btn-success,
+.btn-danger {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.62rem 1.05rem;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 800;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  transition: opacity 0.15s, background 0.15s;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s, transform 0.15s;
 }
-.btn-primary { background: #0f1117; color: white; }
-.btn-secondary { background: #f3f4f6; color: #374151; }
-.btn-success { background: #16a34a; color: white; }
-.btn-danger { background: #dc2626; color: white; }
+
+.btn-primary {
+  background: #0f172a;
+  color: white;
+}
+
+.btn-secondary {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+}
+
+.btn-danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
 .btn-primary:hover:not(:disabled),
 .btn-success:hover:not(:disabled),
-.btn-danger:hover:not(:disabled) { opacity: 0.88; }
-.btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
-.btn-primary:disabled, .btn-secondary:disabled,
-.btn-success:disabled, .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
-.small { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
+.btn-danger:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
 
-.table-wrap { overflow-x: auto; }
+.btn-secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-success:disabled,
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.small {
+  padding: 0.42rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.user-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.action-pill {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.36rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 800;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, transform 0.15s;
+}
+
+.action-pill:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.action-pill.approve {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.action-pill.approve:hover:not(:disabled) {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+.action-pill.reject {
+  background: #ffffff;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.action-pill.reject:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.action-pill.delete {
+  background: #fffafa;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.action-pill.delete:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.action-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
 }
-th, td {
+
+th,
+td {
   text-align: left;
-  padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid #f3f4f6;
+  padding: 0.82rem 1rem;
+  border-bottom: 1px solid #eef2f7;
   vertical-align: middle;
 }
-th {
-  background: #fafafa;
-  color: #8892a4;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid #e5e7eb;
-}
-tbody tr:hover { background: #fafbfc; }
 
-.action-row, .assign-cell {
+th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+tbody tr {
+  transition: background 0.15s;
+}
+
+tbody tr:hover {
+  background: #fbfdfc;
+}
+
+.action-row,
+.assign-cell {
   display: flex;
   gap: 0.4rem;
   align-items: center;
   flex-wrap: wrap;
 }
-.assign-cell select { min-width: 160px; }
+
+.assign-cell select {
+  min-width: 160px;
+}
 
 .tag {
-  background: #eff6ff;
-  color: #2563eb;
-  padding: 0.18rem 0.55rem;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 0.2rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
   text-transform: capitalize;
 }
 
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
-  padding: 0.2rem 0.7rem;
-  font-size: 0.78rem;
-  font-weight: 600;
+  padding: 0.22rem 0.72rem;
+  font-size: 0.76rem;
+  font-weight: 800;
   text-transform: capitalize;
+  border: 1px solid transparent;
 }
-.status-active { background: #f0fdf4; color: #16a34a; }
-.status-pending { background: #fef3c7; color: #b45309; }
-.status-rejected { background: #fef2f2; color: #dc2626; }
-.status-default { background: #f3f4f6; color: #6b7280; }
 
-.muted { color: #8892a4; font-size: 0.9rem; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: #6b7280; }
-.loading { color: #8892a4; padding: 2rem 0; }
+.status-active {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
 
-.empty { text-align: center; padding: 4rem 2rem; color: #8892a4; }
-.empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.status-pending {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.status-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.status-default {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.muted {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.loading {
+  color: #64748b;
+  padding: 2rem 0;
+}
+
+.empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
 .empty h2 {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0f1117;
+  color: #0f172a;
   margin-bottom: 0.5rem;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.delete-modal {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.28);
+}
+
+.modal-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 900;
+  margin-bottom: 1rem;
+}
+
+.delete-modal h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.45rem;
+}
+
+.modal-text {
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0 0 1rem;
+}
+
+.delete-user-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.delete-user-box p {
+  margin: 0 0 0.45rem;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.delete-user-box p:last-child {
+  margin-bottom: 0;
+}
+
+.delete-confirm-label {
+  display: block;
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin-bottom: 0.45rem;
+}
+
+.delete-confirm-input {
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
 @media (max-width: 1100px) {
-  .grid-two, .form-grid { grid-template-columns: 1fr; }
+  .grid-two,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-actions {
+    flex-wrap: wrap;
+  }
 }
 </style>

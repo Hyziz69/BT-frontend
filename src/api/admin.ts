@@ -103,6 +103,10 @@ export const adminApi = {
     return api.patch(`/admin/users/${id}/reject`).then((r) => r.data)
   },
 
+  deleteUser(id: string) {
+    return api.delete(`/admin/users/${id}`).then((r) => r.data)
+  },
+
   getPrograms(): Promise<AdminProgram[]> {
     return api.get('/admin/programs').then((r) => r.data)
   },
