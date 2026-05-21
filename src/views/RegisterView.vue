@@ -38,13 +38,14 @@
           <label>Confirm Password</label>
           <input v-model="form.password_confirmation" type="password" placeholder="••••••••" required />
         </div>
-        <div class="field">
-          <label>Account Type</label>
-          <select v-model="form.account_type">
-            <option value="student">Student</option>
-            <option value="mentor">Mentor</option>
-          </select>
-        </div>
+       <div class="field">
+        <label>Account Type</label>
+        <select v-model="form.account_type">
+          <option value="student">Student</option>
+          <option value="mentor">Mentor</option>
+          <option value="company_contact">Company Representative</option>
+        </select>
+      </div>
         <div class="field checkbox">
           <input type="checkbox" v-model="form.gdpr_consent" id="gdpr" required />
           <label for="gdpr">I agree to the processing of my personal data (GDPR)</label>
