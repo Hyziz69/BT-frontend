@@ -57,44 +57,60 @@
         <div class="modal">
           <h2>New Application</h2>
 
-          <div class="field">
-            <label>Select Call</label>
+          <!-- No team warning -->
+          <div v-if="!hasTeams" class="no-team-warning">
+            <div class="warning-icon">⚠</div>
+            <h3>You don't have a team yet</h3>
+            <p>You need to be part of a team before applying to Program A.</p>
+            <div class="modal-actions">
+              <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
+              <RouterLink to="/teams" class="btn-primary" @click="showCreateForm = false">
+                Go to Teams
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- Application form -->
+          <template v-else>
+            <div class="field">
+              <label>Select Team</label>
+              <select v-model="newApp.team_id">
+                <option value="">-- Select a team --</option>
+                <option v-for="team in teamsStore.teams" :key="team.id" :value="team.id">
+                  {{ team.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Select Call</label>
               <select v-model="newApp.call_id">
                 <option value="">-- Select a call --</option>
                 <option v-for="call in calls" :key="call.id" :value="call.id">
                   {{ call.title }} ({{ new Date(call.closes_at).toLocaleDateString('sk-SK') }})
                 </option>
               </select>
-          </div>
+            </div>
 
-          <div class="field">
-            <label>Select Team</label>
-            <select v-model="newApp.team_id">
-              <option value="">-- Select a team --</option>
-              <option v-for="team in teamsStore.teams" :key="team.id" :value="team.id">
-                {{ team.name }}
-              </option>
-            </select>
-          </div>
+            <div class="field">
+              <label>Motivation Letter</label>
+              <textarea v-model="newApp.motivation_letter" rows="4" placeholder="Why do you want to join this program?" />
+            </div>
 
-          <div class="field">
-            <label>Motivation Letter</label>
-            <textarea v-model="newApp.motivation_letter" rows="4" placeholder="Why do you want to join this program?" />
-          </div>
+            <div class="field">
+              <label>Solution Proposal</label>
+              <textarea v-model="newApp.solution_proposal" rows="4" placeholder="Describe your proposed solution..." />
+            </div>
 
-          <div class="field">
-            <label>Solution Proposal</label>
-            <textarea v-model="newApp.solution_proposal" rows="4" placeholder="Describe your proposed solution..." />
-          </div>
+            <p v-if="appError" class="error">{{ appError }}</p>
 
-          <p v-if="appError" class="error">{{ appError }}</p>
-
-          <div class="modal-actions">
-            <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
-            <button @click="handleCreate" :disabled="creating" class="btn-primary">
-              {{ creating ? 'Creating...' : 'Create Draft' }}
-            </button>
-          </div>
+            <div class="modal-actions">
+              <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
+              <button @click="handleCreate" :disabled="creating" class="btn-primary">
+                {{ creating ? 'Creating...' : 'Create Draft' }}
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -102,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTeamsStore } from '../stores/teams'
@@ -111,7 +127,7 @@ import AppLayout from '../components/AppLayout.vue'
 import type { Application } from '../types'
 import { callsApi } from '../api/calls'
 
-
+const hasTeams = computed(() => teamsStore.teams.length > 0)
 const router = useRouter()
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()

@@ -51,12 +51,9 @@
         <div class="section">
           <div class="section-header">
             <h2>Required Documents</h2>
-            <button v-if="canUpload" @click="showUploadForm = true" class="btn-primary">
-              + Upload Document
-            </button>
           </div>
 
-          <!-- Checklist -->
+          <!-- Required checklist -->
           <div class="checklist">
             <div v-for="item in documentChecklist" :key="item.type" class="checklist-item" :class="{ uploaded: item.uploaded }">
               <div class="checklist-icon">{{ item.uploaded ? '✓' : '○' }}</div>
@@ -67,89 +64,84 @@
                 </span>
                 <span v-else class="checklist-missing">Not uploaded</span>
               </div>
-              <a v-if="item.uploaded && item.doc?.download_url" :href="item.doc.download_url" target="_blank" class="btn-secondary small">Download</a>
+              <div v-if="item.uploaded" class="doc-actions">
+                <button @click="handleViewDocument(item.doc!)" class="btn-icon" title="View">👁</button>
+                <button v-if="canUpload" @click="handleDeleteDocument(item.doc!)" class="btn-icon danger" title="Delete">✕</button>
+              </div>
+              <div v-else-if="canUpload" class="doc-actions">
+                <label class="btn-icon upload-btn" :title="`Upload ${item.label}`">
+                  +
+                  <input type="file" class="file-input-hidden" @change="(e) => handleInlineUpload(e, item.type)" />
+                </label>
+              </div>
             </div>
           </div>
 
-          <!-- Other documents -->
-          <div v-if="otherDocuments.length > 0" class="other-docs">
-            <h3>Other Attachments</h3>
-            <div class="documents-list">
-              <div v-for="doc in otherDocuments" :key="doc.id" class="doc-card">
-                <div class="doc-info">
-                  <strong>{{ doc.filename }}</strong>
-                  <span class="doc-type">{{ doc.doc_type }}</span>
-                  <span class="doc-meta">v{{ doc.version }} · {{ (doc.file_size / 1024).toFixed(1) }} KB</span>
+          <div class="delimiter">
+            <span>Optional Attachments</span>
+          </div>
+
+          <div class="checklist">
+            <div v-if="otherDocuments.length === 0 && !canUpload" class="empty-section">No optional documents uploaded.</div>
+            <div v-for="doc in otherDocuments" :key="doc.id" class="checklist-item uploaded">
+              <div class="checklist-icon">📎</div>
+              <div class="checklist-info">
+                <strong>{{ doc.filename }}</strong>
+                <span class="checklist-meta">{{ doc.doc_type }} · v{{ doc.version }} · {{ (doc.file_size / 1024).toFixed(1) }} KB</span>
+              </div>
+              <div class="doc-actions">
+                <button @click="handleViewDocument(doc)" class="btn-icon" title="View">👁</button>
+                <button v-if="canUpload" @click="handleDeleteDocument(doc)" class="btn-icon danger" title="Delete">✕</button>
+              </div>
+            </div>
+
+            <!-- Upload optional -->
+            <div v-if="canUpload" class="optional-upload">
+              <label class="optional-upload-btn">
+                <div class="optional-upload-content">
+                  <span class="optional-upload-plus">+</span>
+                  <div>
+                    <span class="optional-upload-title">Add Attachment</span>
+                    <span class="optional-upload-hint">CV, cover letter, portfolio, references, or any supporting document</span>
+                  </div>
                 </div>
-                <a :href="doc.download_url" target="_blank" class="btn-secondary small">Download</a>
+                <input type="file" class="file-input-hidden" @change="(e) => handleInlineUpload(e, 'attachment')" />
+              </label>
+            </div>
+          </div>
+        </div>
+        <!-- Milestones -->
+        <div class="section">
+          <div class="section-header">
+            <h2>Milestones</h2>
+            <button v-if="authStore.isAdmin" @click="showMilestoneForm = true" class="btn-primary">
+              + Add Milestone
+            </button>
+          </div>
+
+          <div v-if="milestones.length === 0" class="empty-section">No milestones yet.</div>
+
+          <div class="milestones-list">
+            <div v-for="milestone in milestones" :key="milestone.id" class="milestone-card" :class="{ overdue: milestone.is_overdue }">
+              <div class="milestone-info">
+                <strong>{{ milestone.title }}</strong>
+                <span v-if="milestone.due_date" class="due-date">
+                  Due: {{ new Date(milestone.due_date).toLocaleDateString('sk-SK') }}
+                </span>
+                <p v-if="milestone.comment" class="milestone-comment">{{ milestone.comment }}</p>
+              </div>
+              <div class="milestone-right">
+                <span class="status-badge" :class="milestone.status">{{ milestone.status }}</span>
+                <select v-if="authStore.isAdmin" v-model="milestone.status" @change="handleMilestoneUpdate(milestone)" class="status-select">
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="overdue">Overdue</option>
+                </select>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Upload Document Modal -->
-        <div v-if="showUploadForm" class="modal-overlay" @click.self="showUploadForm = false">
-          <div class="modal">
-            <h2>Upload Document</h2>
-            <div class="field">
-              <label>Document Type</label>
-              <select v-model="uploadDocType">
-                <option value="executive_summary">Executive Summary</option>
-                <option value="tech_architecture">Technical Architecture</option>
-                <option value="roadmap">Roadmap</option>
-                <option value="budget">Budget</option>
-                <option value="risk_analysis">Risk Analysis</option>
-                <option value="monetization">Monetization Model</option>
-                <option value="cv">CV</option>
-                <option value="attachment">Attachment</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>File</label>
-              <input type="file" @change="handleFileChange" />
-            </div>
-            <p v-if="uploadError" class="error">{{ uploadError }}</p>
-            <div class="modal-actions">
-              <button @click="showUploadForm = false" class="btn-secondary">Cancel</button>
-              <button @click="handleUpload" :disabled="uploading" class="btn-primary">
-                {{ uploading ? 'Uploading...' : 'Upload' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Milestones -->
-<div class="section">
-  <div class="section-header">
-    <h2>Milestones</h2>
-    <button v-if="authStore.isAdmin" @click="showMilestoneForm = true" class="btn-primary">
-      + Add Milestone
-    </button>
-  </div>
-
-  <div v-if="milestones.length === 0" class="empty-section">No milestones yet.</div>
-
-  <div class="milestones-list">
-    <div v-for="milestone in milestones" :key="milestone.id" class="milestone-card" :class="{ overdue: milestone.is_overdue }">
-      <div class="milestone-info">
-        <strong>{{ milestone.title }}</strong>
-        <span v-if="milestone.due_date" class="due-date">
-          Due: {{ new Date(milestone.due_date).toLocaleDateString('sk-SK') }}
-        </span>
-        <p v-if="milestone.comment" class="milestone-comment">{{ milestone.comment }}</p>
-      </div>
-      <div class="milestone-right">
-        <span class="status-badge" :class="milestone.status">{{ milestone.status }}</span>
-        <select v-if="authStore.isAdmin" v-model="milestone.status" @change="handleMilestoneUpdate(milestone)" class="status-select">
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="overdue">Overdue</option>
-        </select>
-      </div>
-    </div>
-  </div>
-</div>
 
       <!-- Add Milestone Modal -->
       <div v-if="showMilestoneForm" class="modal-overlay" @click.self="showMilestoneForm = false">
@@ -196,7 +188,6 @@
         {{ transitioning ? 'Updating...' : 'Update Status' }}
       </button>
     </div>
-      </div>
 
       <!-- Submit Application (Student) -->
       <div class="section" v-if="application && (isLeader && application.status === 'draft' || application.status === 'pending_supplement')">
@@ -206,10 +197,35 @@
         <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
           Make sure all 6 required documents are uploaded before submitting.
         </p>
+
+        <!-- Missing documents warning -->
+        <div v-if="submitError" class="submit-error">
+          <div class="submit-error-icon">⚠</div>
+          <div>
+            <strong>Cannot submit</strong>
+            <p>{{ submitError }}</p>
+          </div>
+        </div>
+
         <button @click="handleSubmit" :disabled="submitting" class="btn-primary">
           {{ submitting ? 'Submitting...' : 'Submit Application' }}
         </button>
       </div>
+      <!-- Delete Confirmation Modal -->
+    <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
+      <div class="modal modal-sm">
+        <div class="delete-icon">🗑</div>
+        <h2>Delete Document</h2>
+        <p>Are you sure you want to delete <strong>{{ deleteTarget.filename }}</strong>? This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button @click="deleteTarget = null" class="btn-secondary">Cancel</button>
+          <button @click="confirmDelete" :disabled="deleting" class="btn-danger">
+            {{ deleting ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
     </div>
   </AppLayout>
 </template>
@@ -224,9 +240,45 @@ import AppLayout from '../components/AppLayout.vue'
 import type { Application, Document, Milestone } from '../types'
 import { milestonesApi } from '../api/milestones'
 import { useTeamsStore } from '../stores/teams'
+import api from '../api/axios'
 
 const teamsStore = useTeamsStore()
 const submitting = ref(false)
+const deleteTarget = ref<Document | null>(null)
+const deleting = ref(false)
+const submitError = ref<string | null>(null)
+
+async function handleViewDocument(doc: Document) {
+  if (!application.value) return
+  try {
+    const response = await api.get(
+      `/program-a/applications/${application.value.id}/documents/${doc.id}/download`,
+      { responseType: 'blob' }
+    )
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    window.open(url, '_blank')
+  } catch {
+    alert('Failed to open document')
+  }
+}
+
+function handleDeleteDocument(doc: Document) {
+  deleteTarget.value = doc
+}
+
+async function confirmDelete() {
+  if (!application.value || !deleteTarget.value) return
+  deleting.value = true
+  try {
+    await documentsApi.delete(application.value.id, deleteTarget.value.id)
+    documents.value = documents.value.filter(d => d.id !== deleteTarget.value!.id)
+    deleteTarget.value = null
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Failed to delete document')
+  } finally {
+    deleting.value = false
+  }
+}
 
 const isLeader = computed(() => {
   if (!application.value || !authStore.user) return false
@@ -250,11 +302,12 @@ const allowedTransitions = computed(() => {
 async function handleSubmit() {
   if (!application.value) return
   submitting.value = true
+  submitError.value = null
   try {
     const response = await applicationsApi.transition(application.value.id, 'submitted', '')
     application.value = response.data
   } catch (e: any) {
-    alert(e.response?.data?.message ?? 'Failed to submit application')
+    submitError.value = e.response?.data?.message ?? 'Failed to submit application'
   } finally {
     submitting.value = false
   }
@@ -292,6 +345,24 @@ async function handleMilestoneUpdate(milestone: any) {
   }
 }
 
+async function handleInlineUpload(e: Event, docType: string) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file || !application.value) return
+  uploading.value = true
+  uploadError.value = null
+  try {
+    const response = await documentsApi.upload(application.value.id, file, docType)
+    documents.value.push(response.data)
+  } catch (e: any) {
+    uploadError.value = e.response?.data?.message ?? 'Upload failed'
+    alert(uploadError.value)
+  } finally {
+    uploading.value = false
+    target.value = ''
+  }
+}
+
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -301,9 +372,6 @@ const documents = ref<Document[]>([])
 const milestones = ref<Milestone[]>([])
 const loading = ref(false)
 
-const showUploadForm = ref(false)
-const uploadDocType = ref('executive_summary')
-const uploadFile = ref<File | null>(null)
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
 
@@ -350,27 +418,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-function handleFileChange(e: Event) {
-  const target = e.target as HTMLInputElement
-  uploadFile.value = target.files?.[0] ?? null
-}
-
-async function handleUpload() {
-  if (!uploadFile.value || !application.value) return
-  uploading.value = true
-  uploadError.value = null
-  try {
-    const response = await documentsApi.upload(application.value.id, uploadFile.value, uploadDocType.value)
-    documents.value.push(response.data)
-    showUploadForm.value = false
-    uploadFile.value = null
-  } catch (e: any) {
-    uploadError.value = e.response?.data?.message ?? 'Upload failed'
-  } finally {
-    uploading.value = false
-  }
-}
 
 async function handleTransition() {
   if (!application.value || !newStatus.value) return
@@ -549,6 +596,58 @@ async function handleTransition() {
 /* Documents list */
 .documents-list { display: flex; flex-direction: column; gap: 0.6rem; }
 
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.btn-icon:hover { background: #e5e7eb; }
+.btn-icon.danger { background: #fee2e2; color: #991b1b; }
+.btn-icon.danger:hover { background: #fecaca; }
+
+.checklist-missing-badge {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.delimiter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0 1rem 0;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.delimiter::before,
+.delimiter::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
 .doc-card {
   display: flex;
   justify-content: space-between;
@@ -569,6 +668,46 @@ async function handleTransition() {
   border-radius: 6px;
   display: inline-block;
   width: fit-content;
+}
+
+.optional-upload-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.optional-upload-plus {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.optional-upload-btn:hover .optional-upload-plus {
+  background: #6ee7b7;
+  color: #065f46;
+}
+
+.optional-upload-title {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.optional-upload-hint {
+  display: block;
+  font-size: 0.775rem;
+  color: #9ca3af;
+  margin-top: 0.1rem;
 }
 
 .doc-meta { font-size: 0.775rem; color: #9ca3af; }
@@ -689,6 +828,77 @@ async function handleTransition() {
 
 .field { margin-bottom: 1rem; }
 
+.file-input-hidden {
+  display: none;
+}
+
+.upload-btn {
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px dashed #6ee7b7;
+}
+
+.upload-btn:hover {
+  background: #dcfce7;
+}
+
+.optional-upload {
+  margin-top: 0.5rem;
+}
+
+.optional-upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.75rem 1rem;
+  border: 1px dashed #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.optional-upload-btn:hover {
+  border-color: #6ee7b7;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.optional-upload-btn input {
+  display: none;
+}
+
+.submit-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #fff5f5;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.submit-error-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.submit-error strong {
+  display: block;
+  color: #991b1b;
+  font-size: 0.875rem;
+  margin-bottom: 0.2rem;
+}
+
+.submit-error p {
+  color: #b91c1c;
+  font-size: 0.825rem;
+  margin: 0;
+}
+
 label {
   display: block;
   margin-bottom: 0.4rem;
@@ -717,6 +927,43 @@ input:focus, select:focus, textarea:focus {
   gap: 0.75rem;
   justify-content: flex-end;
   margin-top: 1.5rem;
+}
+
+.modal-sm {
+  max-width: 380px;
+  text-align: center;
+}
+
+.modal-sm h2 {
+  margin-bottom: 0.75rem;
+}
+
+.modal-sm p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 0;
+}
+
+.delete-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error { color: #ef4444; font-size: 0.875rem; }
