@@ -12,22 +12,14 @@
         </div>
       </div>
 
-      <!-- Status banner for pending accounts -->
-      <div v-if="authStore.user?.status === 'pending'" class="status-banner pending">
-        <span class="banner-icon">⏳</span>
-        <div>
-          <strong>Account pending approval</strong>
-          <p>An NTI administrator will review and activate your account shortly.</p>
-        </div>
-      </div>
-
       <!-- Quick stats -->
-      <div class="stats-grid">
-        <div class="stat-card">
+     <div class="stats-grid">
+        <div class="stat-card" v-if="!isAdmin">
           <span class="stat-icon">◈</span>
           <div class="stat-info">
-            <span class="stat-label">Teams</span>
-            <span class="stat-value">{{ teamsStore.teams.length }}</span>
+            <span class="stat-label">My Team</span>
+            <span class="stat-value" v-if="teamsStore.teams.length > 0">{{ teamsStore.teams[0]?.name }}</span>
+            <span class="stat-value loading-shimmer" v-else>—</span>
           </div>
         </div>
         <div class="stat-card">
@@ -49,15 +41,15 @@
       <!-- Quick links -->
       <div class="section-title">Quick actions</div>
       <div class="quick-links">
-        <RouterLink to="/teams" class="quick-card">
+        <RouterLink v-if="!isAdmin" :to="teamsStore.teams.length > 0 && teamsStore.teams[0] ? `/teams/${teamsStore.teams[0].id}` : '/teams'" class="quick-card">
           <div class="quick-icon teams">◈</div>
           <div class="quick-info">
-            <h3>My Teams</h3>
-            <p>View and manage your teams</p>
+            <h3>My Team</h3>
+            <p>{{ teamsStore.teams[0]?.name ?? 'View and manage your team' }}</p>
           </div>
           <span class="quick-arrow">→</span>
         </RouterLink>
-        <RouterLink to="/applications" class="quick-card">
+        <RouterLink v-if="!isAdmin" to="/applications" class="quick-card">
           <div class="quick-icon applications">◎</div>
           <div class="quick-info">
             <h3>Applications</h3>
@@ -79,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useTeamsStore } from '../stores/teams'
 import { applicationsApi } from '../api/applications'
@@ -89,6 +81,13 @@ const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
 const applicationCount = ref(0)
 const isAdmin = ref(false)
+
+const myTeamName = computed(() => {
+  if (teamsStore.teams.length > 0 && teamsStore.teams[0]) {
+    return teamsStore.teams[0].name
+  }
+  return 'None'
+})
 
 onMounted(async () => {
   await teamsStore.fetchTeams()
@@ -226,6 +225,20 @@ onMounted(async () => {
   font-weight: 800;
   color: #0f1117;
   line-height: 1.2;
+}
+
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 4px;
+  color: transparent;
+  min-width: 60px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .section-title {

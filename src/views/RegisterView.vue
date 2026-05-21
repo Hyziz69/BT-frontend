@@ -68,7 +68,15 @@ import { authApi } from '../api/auth'
 const router = useRouter()
 const route = useRoute()
 
-const form = ref({
+const form = ref<{
+  first_name: string
+  last_name: string
+  email: string
+  password: string
+  password_confirmation: string
+  account_type: 'student' | 'mentor' | 'company_contact'
+  gdpr_consent: boolean
+}>({
   first_name: '',
   last_name: '',
   email: '',

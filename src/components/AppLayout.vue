@@ -12,9 +12,9 @@
           <span class="nav-icon">⊞</span>
           <span>Dashboard</span>
         </RouterLink>
-        <RouterLink to="/teams" class="nav-item">
+        <RouterLink :to="teamLink" class="nav-item">
           <span class="nav-icon">◈</span>
-          <span>Teams</span>
+          <span>{{ teamLabel }}</span>
         </RouterLink>
         <RouterLink to="/applications" class="nav-item">
           <span class="nav-icon">◎</span>
@@ -50,12 +50,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useTeamsStore } from '@/stores/teams'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const teamsStore = useTeamsStore()
+const isStudent = computed(() => authStore.user?.account_type === 'student')
+
+const teamLink = computed(() => {
+  if (isStudent.value && teamsStore.teams.length > 0 && teamsStore.teams[0]) {
+    return `/teams/${teamsStore.teams[0].id}`
+  }
+  return '/teams'
+})
+
+const teamLabel = computed(() => isStudent.value ? 'My Team' : 'Teams')
+
+onMounted(() => {
+  if (isStudent.value) {
+    teamsStore.fetchTeams()
+  }
+})
 
 const initials = computed(() => {
   const f = authStore.user?.first_name?.[0] ?? ''
