@@ -20,6 +20,14 @@
           <span class="nav-icon">◎</span>
           <span>Applications</span>
         </RouterLink>
+        <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
+          <span class="nav-icon">★</span>
+          <span>Admin</span>
+        </RouterLink>
+        <RouterLink to="/profile" class="nav-item">
+          <span class="nav-icon">◉</span>
+          <span>Profile</span>
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">
@@ -55,6 +63,8 @@ const initials = computed(() => {
   return (f + l).toUpperCase()
 })
 
+const isAdmin = computed(() => authStore.user?.account_type === 'nti_admin')
+
 function handleLogout() {
   authStore.logout()
   router.push('/login')
@@ -62,7 +72,6 @@ function handleLogout() {
 </script>
 
 <style>
-/* Global reset — not scoped so it applies to html/body */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -106,16 +115,12 @@ html, body {
   border-bottom: 1px solid #1e2130;
 }
 
-.brand-icon {
-  font-size: 1.5rem;
-  color: #6ee7b7;
-}
-
+.brand-icon { font-size: 1.5rem; color: #6ee7b7; }
 .brand-text {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
   font-size: 1.1rem;
-  color: #ffffff;
+  color: #fff;
   letter-spacing: 0.02em;
 }
 
@@ -140,21 +145,10 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.nav-item:hover {
-  background: #1a1f2e;
-  color: #ffffff;
-}
+.nav-item:hover { background: #1a1f2e; color: #fff; }
+.nav-item.router-link-active { background: #1a2e22; color: #6ee7b7; }
 
-.nav-item.router-link-active {
-  background: #1a2e22;
-  color: #6ee7b7;
-}
-
-.nav-icon {
-  font-size: 1rem;
-  width: 20px;
-  text-align: center;
-}
+.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
 
 .sidebar-footer {
   padding: 1rem 0.75rem;
@@ -164,13 +158,7 @@ html, body {
   gap: 0.5rem;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex: 1;
-  min-width: 0;
-}
+.user-info { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
 
 .user-avatar {
   width: 34px;
@@ -187,26 +175,16 @@ html, body {
   flex-shrink: 0;
 }
 
-.user-details {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
+.user-details { display: flex; flex-direction: column; min-width: 0; }
 .user-name {
-  color: #ffffff;
+  color: #fff;
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.user-role {
-  color: #8892a4;
-  font-size: 0.75rem;
-  text-transform: capitalize;
-}
+.user-role { color: #8892a4; font-size: 0.75rem; text-transform: capitalize; }
 
 .logout-btn {
   background: none;
@@ -219,11 +197,7 @@ html, body {
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
-
-.logout-btn:hover {
-  background: #1e2130;
-  color: #f87171;
-}
+.logout-btn:hover { background: #1e2130; color: #f87171; }
 
 .main-content {
   margin-left: 240px;

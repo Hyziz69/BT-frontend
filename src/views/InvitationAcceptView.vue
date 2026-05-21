@@ -7,10 +7,14 @@
       </div>
 
       <div v-else-if="error" class="state error">
-        <div class="icon">✕</div>
-        <h2>Invalid Invitation</h2>
+        <div class="icon">{{ expired ? '⏱' : '✕' }}</div>
+        <h2>{{ expired ? 'Invitation Expired' : 'Invalid Invitation' }}</h2>
         <p>{{ error }}</p>
-        <RouterLink to="/login" class="btn-primary">Go to Login</RouterLink>
+        <template v-if="expired">
+          <p class="note">Ask the team leader to send you a new invitation.</p>
+          <RouterLink to="/register" class="btn-primary">Register</RouterLink>
+        </template>
+        <RouterLink v-else to="/login" class="btn-primary">Go to Login</RouterLink>
       </div>
 
       <div v-else-if="accepted" class="state success">
@@ -64,6 +68,7 @@ const accepting = ref(false)
 const accepted = ref(false)
 const teamName = ref('')
 const error = ref<string | null>(null)
+const expired = ref(false)
 
 onMounted(async () => {
   token.value = route.query.token as string
@@ -77,8 +82,10 @@ onMounted(async () => {
   try {
     const response = await invitationsApi.preview(token.value)
     invitation.value = response
-  } catch {
-    error.value = 'This invitation is invalid or has expired.'
+  } catch (e: any) {
+    const reason = e.response?.data?.reason
+    expired.value = reason === 'expired'
+    error.value = e.response?.data?.message ?? 'This invitation is invalid or has expired.'
   } finally {
     loading.value = false
   }
@@ -154,6 +161,7 @@ h2 {
 p { color: #6b7280; margin: 0; }
 
 .expires { font-size: 0.85rem; color: #9ca3af; }
+.note { font-size: 0.82rem; color: #9ca3af; margin-top: -0.25rem; }
 
 .auth-required {
   display: flex;

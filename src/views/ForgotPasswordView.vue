@@ -5,22 +5,27 @@
         <div class="brand-icon">◈</div>
         <h1>NTI Portal</h1>
       </div>
-      <h2>Sign In</h2>
-      <form @submit.prevent="handleLogin">
+      <h2>Forgot Password</h2>
+
+      <div v-if="sent" class="success-banner">
+        <span>✓</span>
+        <div>
+          <strong>Check your email</strong>
+          <p>If this email is registered, you'll receive a reset link shortly.</p>
+        </div>
+      </div>
+
+      <form v-else @submit.prevent="handleSubmit">
+        <p class="subtitle">Enter your email and we'll send you a reset link.</p>
         <div class="field">
           <label>Email</label>
-          <input v-model="form.email" type="email" placeholder="your@email.com" required />
-        </div>
-        <div class="field">
-          <label>Password</label>
-          <input v-model="form.password" type="password" placeholder="••••••••" required />
+          <input v-model="email" type="email" placeholder="your@email.com" required />
         </div>
         <p v-if="error" class="error">{{ error }}</p>
         <button type="submit" :disabled="loading">
-          {{ loading ? 'Signing in...' : 'Sign In' }}
+          {{ loading ? 'Sending...' : 'Send Reset Link' }}
         </button>
-        <p class="auth-link forgot"><RouterLink to="/forgot-password">Forgot password?</RouterLink></p>
-        <p class="auth-link">Don't have an account? <RouterLink to="/register">Sign up</RouterLink></p>
+        <p class="auth-link"><RouterLink to="/login">← Back to Login</RouterLink></p>
       </form>
     </div>
   </div>
@@ -28,27 +33,22 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { RouterLink } from 'vue-router'
 import { authApi } from '../api/auth'
 
-const router = useRouter()
-const authStore = useAuthStore()
-const form = ref({ email: '', password: '' })
+const email = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
+const sent = ref(false)
 
-async function handleLogin() {
+async function handleSubmit() {
   loading.value = true
   error.value = null
-
   try {
-    const response = await authApi.login(form.value.email, form.value.password)
-    authStore.setToken(response.access_token)
-    authStore.setUser(response.user)
-    router.push('/dashboard')
+    await authApi.forgotPassword(email.value)
+    sent.value = true
   } catch (e: any) {
-    error.value = e.response?.data?.message ?? 'Login failed.'
+    error.value = e.response?.data?.message ?? 'Something went wrong. Try again.'
   } finally {
     loading.value = false
   }
@@ -70,7 +70,7 @@ async function handleLogin() {
   background: white;
   padding: 2.5rem;
   border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
   width: 100%;
   max-width: 420px;
 }
@@ -107,12 +107,16 @@ h2 {
   font-size: 1.5rem;
   font-weight: 700;
   color: #0f1117;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 0.5rem 0;
 }
 
-.field {
-  margin-bottom: 1rem;
+.subtitle {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem 0;
 }
+
+.field { margin-bottom: 1rem; }
 
 label {
   display: block;
@@ -153,13 +157,8 @@ button {
   transition: opacity 0.15s;
 }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-button:hover:not(:disabled) {
-  opacity: 0.9;
-}
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+button:hover:not(:disabled) { opacity: 0.9; }
 
 .error {
   color: #ef4444;
@@ -167,11 +166,38 @@ button:hover:not(:disabled) {
   margin-bottom: 0.5rem;
 }
 
+.success-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #f0fdf4;
+  border: 1px solid #6ee7b7;
+  border-radius: 10px;
+}
+
+.success-banner span {
+  font-size: 1.25rem;
+  color: #16a34a;
+}
+
+.success-banner strong {
+  display: block;
+  color: #065f46;
+  margin-bottom: 0.25rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.success-banner p {
+  color: #047857;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
 .auth-link {
   text-align: center;
   margin-top: 1.25rem;
   font-size: 0.875rem;
-  color: #8892a4;
 }
 
 .auth-link a {
@@ -180,19 +206,5 @@ button:hover:not(:disabled) {
   text-decoration: none;
 }
 
-.auth-link a:hover {
-  color: #6ee7b7;
-}
-
-.auth-link.forgot {
-  text-align: right;
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-.auth-link.forgot a {
-  font-size: 0.825rem;
-  color: #6b7280;
-  font-weight: 500;
-}
+.auth-link a:hover { color: #6ee7b7; }
 </style>
