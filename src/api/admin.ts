@@ -86,9 +86,76 @@ export interface AdminApplication {
   }>
 }
 
+export interface AdminAuditActor {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  account_type: string
+}
+
+export interface AdminAuditEvent {
+  id: string
+  actor_id: string | null
+  action: string
+  entity_type: string
+  entity_id: string | null
+  payload: {
+    label?: string | null
+    method?: string
+    path?: string
+    status_code?: number
+    request?: Record<string, unknown>
+    route_parameters?: Record<string, unknown>
+    [key: string]: unknown
+  } | null
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
+  actor?: AdminAuditActor | null
+}
+
+export interface AdminAuditEventsResponse {
+  data: AdminAuditEvent[]
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+  from: number | null
+  to: number | null
+}
+
+export interface AdminAuditEventFilters {
+  actions: string[]
+  entity_types: Array<{
+    value: string
+    label: string
+  }>
+}
+
+export interface AdminAuditEventQuery {
+  search?: string
+  action?: string
+  entity_type?: string
+  actor_id?: string
+  date_from?: string
+  date_to?: string
+  per_page?: number
+  page?: number
+  sort?: 'newest' | 'oldest'
+}
+
 export const adminApi = {
   getDashboard(): Promise<AdminDashboardStats> {
     return api.get('/admin/dashboard').then((r) => r.data)
+  },
+
+  getAuditEvents(params?: AdminAuditEventQuery): Promise<AdminAuditEventsResponse> {
+    return api.get('/admin/audit-events', { params }).then((r) => r.data)
+  },
+
+  getAuditEventFilters(): Promise<AdminAuditEventFilters> {
+    return api.get('/admin/audit-events/filters').then((r) => r.data)
   },
 
   getUsers(params?: Record<string, string>) {

@@ -1,6 +1,5 @@
 <template>
   <div class="app-layout">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <span class="brand-icon">⬡</span>
@@ -12,37 +11,57 @@
           <span class="nav-icon">⊞</span>
           <span>Dashboard</span>
         </RouterLink>
-        <RouterLink :to="teamLink" class="nav-item">
+
+        <RouterLink to="/teams" class="nav-item">
           <span class="nav-icon">◈</span>
-          <span>{{ teamLabel }}</span>
+          <span>{{ isStudent ? 'My Team' : 'Teams' }}</span>
         </RouterLink>
+
         <RouterLink to="/applications" class="nav-item">
           <span class="nav-icon">◎</span>
           <span>Applications</span>
         </RouterLink>
+
         <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
           <span class="nav-icon">★</span>
           <span>Admin</span>
         </RouterLink>
-        <RouterLink to="/profile" class="nav-item">
-          <span class="nav-icon">◉</span>
-          <span>Profile</span>
+
+        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
+          <span class="nav-icon">◷</span>
+          <span>Activity Log</span>
         </RouterLink>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="user-info">
-          <div class="user-avatar">{{ initials }}</div>
-          <div class="user-details">
-            <span class="user-name">{{ authStore.user?.first_name }} {{ authStore.user?.last_name }}</span>
-            <span class="user-role">{{ authStore.user?.account_type }}</span>
+        <button
+          type="button"
+          class="user-info"
+          :class="{ active: route.path === '/profile' }"
+          title="Open profile"
+          @click="goToProfile"
+        >
+          <img
+            v-if="avatarUrl"
+            :src="avatarUrl"
+            alt="Profile avatar"
+            class="user-avatar-img"
+          />
+
+          <div v-else class="user-avatar">
+            {{ initials }}
           </div>
-        </div>
+
+          <div class="user-details">
+            <span class="user-name">{{ userName }}</span>
+            <span class="user-role">{{ roleLabel }}</span>
+          </div>
+        </button>
+
         <button @click="handleLogout" class="logout-btn" title="Logout">⏻</button>
       </div>
     </aside>
 
-    <!-- Main content -->
     <main class="main-content">
       <slot />
     </main>
@@ -50,38 +69,57 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useTeamsStore } from '@/stores/teams'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
-const teamsStore = useTeamsStore()
-const isStudent = computed(() => authStore.user?.account_type === 'student')
 
-const teamLink = computed(() => {
-  if (isStudent.value && teamsStore.teams.length > 0 && teamsStore.teams[0]) {
-    return `/teams/${teamsStore.teams[0].id}`
-  }
-  return '/teams'
+const user = computed(() => authStore.user as any)
+
+const isStudent = computed(() => user.value?.account_type === 'student')
+
+const isAdmin = computed(() =>
+  ['nti_admin', 'superadmin'].includes(user.value?.account_type ?? ''),
+)
+
+const avatarUrl = computed(() => user.value?.avatar_url ?? null)
+
+const userName = computed(() => {
+  const first = user.value?.first_name ?? ''
+  const last = user.value?.last_name ?? ''
+
+  return `${first} ${last}`.trim() || 'NTI User'
 })
 
-const teamLabel = computed(() => isStudent.value ? 'My Team' : 'Teams')
+const roleLabel = computed(() => {
+  const role = user.value?.account_type ?? ''
 
-onMounted(() => {
-  if (isStudent.value) {
-    teamsStore.fetchTeams()
+  const labels: Record<string, string> = {
+    student: 'Student',
+    mentor: 'Mentor',
+    company_contact: 'Company',
+    nti_admin: 'NTI Administrator',
+    superadmin: 'Super Admin',
   }
+
+  return labels[role] ?? role
 })
 
 const initials = computed(() => {
-  const f = authStore.user?.first_name?.[0] ?? ''
-  const l = authStore.user?.last_name?.[0] ?? ''
-  return (f + l).toUpperCase()
+  const f = user.value?.first_name?.[0] ?? ''
+  const l = user.value?.last_name?.[0] ?? ''
+
+  return (f + l).toUpperCase() || 'NT'
 })
 
-const isAdmin = computed(() => authStore.user?.account_type === 'nti_admin')
+function goToProfile() {
+  if (route.path !== '/profile') {
+    router.push('/profile')
+  }
+}
 
 function handleLogout() {
   authStore.logout()
@@ -133,7 +171,11 @@ html, body {
   border-bottom: 1px solid #1e2130;
 }
 
-.brand-icon { font-size: 1.5rem; color: #6ee7b7; }
+.brand-icon {
+  font-size: 1.5rem;
+  color: #6ee7b7;
+}
+
 .brand-text {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
@@ -163,10 +205,21 @@ html, body {
   transition: all 0.15s ease;
 }
 
-.nav-item:hover { background: #1a1f2e; color: #fff; }
-.nav-item.router-link-active { background: #1a2e22; color: #6ee7b7; }
+.nav-item:hover {
+  background: #1a1f2e;
+  color: #fff;
+}
 
-.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-item.router-link-active {
+  background: #1a2e22;
+  color: #6ee7b7;
+}
+
+.nav-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
 
 .sidebar-footer {
   padding: 1rem 0.75rem;
@@ -176,12 +229,36 @@ html, body {
   gap: 0.5rem;
 }
 
-.user-info { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  padding: 0.35rem;
+  margin: -0.35rem;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
 
-.user-avatar {
+.user-info:hover,
+.user-info.active {
+  background: #1a1f2e;
+}
+
+.user-avatar,
+.user-avatar-img {
   width: 34px;
   height: 34px;
   border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.user-avatar {
   background: #1a2e22;
   color: #6ee7b7;
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -190,10 +267,20 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-.user-details { display: flex; flex-direction: column; min-width: 0; }
+.user-avatar-img {
+  object-fit: cover;
+  display: block;
+  border: 1px solid rgba(110, 231, 183, 0.25);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .user-name {
   color: #fff;
   font-size: 0.85rem;
@@ -202,7 +289,12 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.user-role { color: #8892a4; font-size: 0.75rem; text-transform: capitalize; }
+
+.user-role {
+  color: #8892a4;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
 
 .logout-btn {
   background: none;
@@ -215,7 +307,11 @@ html, body {
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
-.logout-btn:hover { background: #1e2130; color: #f87171; }
+
+.logout-btn:hover {
+  background: #1e2130;
+  color: #f87171;
+}
 
 .main-content {
   margin-left: 240px;

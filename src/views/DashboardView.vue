@@ -8,12 +8,12 @@
           <p class="page-subtitle">Here's what's happening with your projects.</p>
         </div>
         <div class="account-badge">
-          <span>{{ authStore.user?.account_type }}</span>
+          <span>{{ roleLabel }}</span>
         </div>
       </div>
 
       <!-- Quick stats -->
-     <div class="stats-grid">
+      <div class="stats-grid">
         <div class="stat-card" v-if="!isAdmin">
           <span class="stat-icon">◈</span>
           <div class="stat-info">
@@ -22,18 +22,30 @@
             <span class="stat-value loading-shimmer" v-else>—</span>
           </div>
         </div>
+
+        <div class="stat-card" v-if="isAdmin">
+          <span class="stat-icon">◉</span>
+          <div class="stat-info">
+            <span class="stat-label">Pending Users</span>
+            <span class="stat-value">{{ adminStats?.pending_users_count ?? 0 }}</span>
+          </div>
+        </div>
+
         <div class="stat-card">
           <span class="stat-icon">◎</span>
           <div class="stat-info">
             <span class="stat-label">Applications</span>
-            <span class="stat-value">{{ applicationCount }}</span>
+            <span class="stat-value">
+              {{ isAdmin ? adminStats?.total_applications ?? 0 : applicationCount }}
+            </span>
           </div>
         </div>
+
         <div class="stat-card">
           <span class="stat-icon">✦</span>
           <div class="stat-info">
-            <span class="stat-label">Program</span>
-            <span class="stat-value">A</span>
+            <span class="stat-label">{{ isAdmin ? 'Open Calls' : 'Program' }}</span>
+            <span class="stat-value">{{ isAdmin ? adminStats?.open_calls ?? 0 : 'A' }}</span>
           </div>
         </div>
       </div>
@@ -41,7 +53,11 @@
       <!-- Quick links -->
       <div class="section-title">Quick actions</div>
       <div class="quick-links">
-        <RouterLink v-if="!isAdmin" :to="teamsStore.teams.length > 0 && teamsStore.teams[0] ? `/teams/${teamsStore.teams[0].id}` : '/teams'" class="quick-card">
+        <RouterLink
+          v-if="!isAdmin"
+          :to="teamsStore.teams.length > 0 && teamsStore.teams[0] ? `/teams/${teamsStore.teams[0].id}` : '/teams'"
+          class="quick-card"
+        >
           <div class="quick-icon teams">◈</div>
           <div class="quick-info">
             <h3>My Team</h3>
@@ -49,6 +65,7 @@
           </div>
           <span class="quick-arrow">→</span>
         </RouterLink>
+
         <RouterLink v-if="!isAdmin" to="/applications" class="quick-card">
           <div class="quick-icon applications">◎</div>
           <div class="quick-info">
@@ -57,11 +74,21 @@
           </div>
           <span class="quick-arrow">→</span>
         </RouterLink>
+
         <RouterLink v-if="isAdmin" to="/admin" class="quick-card">
           <div class="quick-icon admin">⚙</div>
           <div class="quick-info">
             <h3>Admin Panel</h3>
-            <p>Manage users and approvals</p>
+            <p>Manage users, approvals, calls and programs</p>
+          </div>
+          <span class="quick-arrow">→</span>
+        </RouterLink>
+
+        <RouterLink v-if="isAdmin" to="/admin/activity" class="quick-card">
+          <div class="quick-icon activity">◷</div>
+          <div class="quick-info">
+            <h3>Activity Log</h3>
+            <p>Check admin action history and audit records</p>
           </div>
           <span class="quick-arrow">→</span>
         </RouterLink>
@@ -75,30 +102,52 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useTeamsStore } from '../stores/teams'
 import { applicationsApi } from '../api/applications'
+import { adminApi, type AdminDashboardStats } from '../api/admin'
 import AppLayout from '../components/AppLayout.vue'
 
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
-const applicationCount = ref(0)
-const isAdmin = ref(false)
 
-const myTeamName = computed(() => {
-  if (teamsStore.teams.length > 0 && teamsStore.teams[0]) {
-    return teamsStore.teams[0].name
+const applicationCount = ref(0)
+const adminStats = ref<AdminDashboardStats | null>(null)
+
+const isAdmin = computed(() =>
+  authStore.user?.account_type === 'nti_admin' || authStore.user?.account_type === 'superadmin',
+)
+
+const roleLabel = computed(() => {
+  const role = authStore.user?.account_type ?? ''
+
+  const labels: Record<string, string> = {
+    student: 'Student',
+    mentor: 'Mentor',
+    company_contact: 'Company',
+    nti_admin: 'NTI Administrator',
+    superadmin: 'Super Admin',
   }
-  return 'None'
+
+  return labels[role] ?? role
 })
 
 onMounted(async () => {
+  if (isAdmin.value) {
+    try {
+      adminStats.value = await adminApi.getDashboard()
+    } catch {
+      adminStats.value = null
+    }
+
+    return
+  }
+
   await teamsStore.fetchTeams()
+
   try {
     const res = await applicationsApi.getAll()
     applicationCount.value = res.data.length
   } catch {
     applicationCount.value = 0
   }
-
-  isAdmin.value = authStore.user?.account_type === 'nti_admin' || authStore.user?.account_type === 'superadmin'
 })
 </script>
 
@@ -146,37 +195,6 @@ onMounted(async () => {
   font-weight: 500;
   text-transform: capitalize;
   margin-top: 1.25rem;
-}
-
-.status-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 1rem 1.25rem;
-  border-radius: 10px;
-  margin-bottom: 2rem;
-}
-
-.status-banner.pending {
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-}
-
-.status-banner strong {
-  display: block;
-  color: #92400e;
-  margin-bottom: 0.2rem;
-}
-
-.status-banner p {
-  color: #b45309;
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.banner-icon {
-  font-size: 1.25rem;
-  margin-top: 0.1rem;
 }
 
 .stats-grid {
@@ -301,6 +319,11 @@ onMounted(async () => {
 .quick-icon.admin {
   background: #fef3c7;
   color: #d97706;
+}
+
+.quick-icon.activity {
+  background: #f5f3ff;
+  color: #7c3aed;
 }
 
 .quick-info {
