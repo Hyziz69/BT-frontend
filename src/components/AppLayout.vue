@@ -22,6 +22,11 @@
           <span>Applications</span>
         </RouterLink>
 
+        <RouterLink to="/applications-b" class="nav-item">
+          <span class="nav-icon">★</span>
+          <span>Program B Applications</span>
+        </RouterLink>
+
         <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
           <span class="nav-icon">★</span>
           <span>Admin</span>

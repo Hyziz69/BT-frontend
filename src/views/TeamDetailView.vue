@@ -26,7 +26,7 @@
         <div class="section">
           <div class="section-header">
             <h2>Members</h2>
-            <button v-if="isLeader" @click="copyInviteCode" class="btn-primary">
+            <button @click="copyInviteCode" class="btn-primary">
               + Invite Code: {{teamsStore.currentTeam.invite_code}}
             </button>
           </div>
