@@ -109,7 +109,7 @@ import { useTeamsStore } from '../stores/teams'
 import { applicationsApi } from '../api/applications'
 import AppLayout from '../components/AppLayout.vue'
 import type { Application } from '../types'
-import { callsApi } from '../api/calls'
+import { callsApi } from '../api/program-b/calls.ts'
 
 
 const router = useRouter()

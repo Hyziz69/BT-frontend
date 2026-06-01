@@ -1,4 +1,4 @@
-import api from './axios'
+import api from '../axios.ts'
 import type { ApiResponse, PaginatedResponse, Team } from '@/types'
 
 export const teamsApi = {

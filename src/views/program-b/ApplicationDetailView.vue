@@ -6,19 +6,17 @@
       <div v-if="loading">Loading application...</div>
 
       <div v-else-if="application">
-        <!-- Header -->
         <div class="page-header">
           <div class="header-content">
             <div class="app-icon">◎</div>
             <div>
               <h1 class="page-title">{{ application.team?.name ?? 'Application' }}</h1>
-              <p class="page-subtitle">{{ application.call?.program?.name ?? 'Program A' }}</p>
+              <p class="page-subtitle">{{ application.call?.program?.name ?? 'Program B' }}</p>
             </div>
           </div>
           <span class="status-badge" :class="application.status">{{ application.status.replace(/_/g, ' ') }}</span>
         </div>
 
-        <!-- Details -->
         <div class="section">
           <h2>Details</h2>
           <div class="detail-row">
@@ -35,90 +33,95 @@
           </div>
         </div>
 
-        <!-- Motivation Letter -->
+        <div class="section">
+          <div class="section-header">
+            <h2>Mentorship</h2>
+          </div>
+
+          <div v-if="activeMentorships.length > 0" class="mentors-list">
+            <div v-for="mentorship in activeMentorships" :key="mentorship.id" class="detail-row mentorship-row">
+              <div>
+                <p><strong>Name:</strong> {{ mentorship.mentor.first_name }} {{ mentorship.mentor.last_name }}</p>
+                <p><strong>Email:</strong> <a :href="`mailto:${mentorship.mentor.email}`">{{ mentorship.mentor.email }}</a></p>
+              </div>
+              <div v-if="authStore.isAdmin" class="actions">
+                <button @click="handleEndMentorship(mentorship.id)" class="btn-secondary small">End Mentorship</button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-section">
+            No active mentors have been assigned to this application yet.
+          </div>
+
+          <div v-if="authStore.isAdmin" class="assign-form" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+            <div class="field">
+              <select v-model="selectedMentorId" :disabled="loadingMentors || assigningMentor">
+                <option value="">
+                  {{ loadingMentors ? 'Loading mentors...' : '-- Add Mentor --' }}
+                </option>
+                <option v-for="mentor in availableMentors" :key="mentor.id" :value="mentor.id">
+                  {{ mentor.first_name }} {{ mentor.last_name }}
+                </option>
+              </select>
+            </div>
+            <button
+              @click="handleAssignMentor"
+              :disabled="!selectedMentorId || assigningMentor || loadingMentors"
+              class="btn-primary"
+            >
+              {{ assigningMentor ? 'Assigning...' : 'Assign Mentor' }}
+            </button>
+          </div>
+        </div>
+
         <div class="section" v-if="application.motivation_letter">
           <h2>Motivation Letter</h2>
           <p class="text-content">{{ application.motivation_letter }}</p>
         </div>
 
-        <!-- Solution Proposal -->
         <div class="section" v-if="application.solution_proposal">
           <h2>Solution Proposal</h2>
           <p class="text-content">{{ application.solution_proposal }}</p>
         </div>
 
-        <!-- Documents -->
-        <div class="section">
+        <div class="section" v-if="application.team?.members">
           <div class="section-header">
-            <h2>Required Documents</h2>
-            <button v-if="canUpload" @click="showUploadForm = true" class="btn-primary">
-              + Upload Document
-            </button>
+            <h2>Team CVs</h2>
           </div>
 
-          <!-- Checklist -->
+          <p class="text-content" style="margin-bottom: 1rem; font-size: 0.875rem;">
+            Všetci členovia tímu musia mať vo svojom profile nahraté CV pred podaním prihlášky.
+          </p>
+
           <div class="checklist">
-            <div v-for="item in documentChecklist" :key="item.type" class="checklist-item" :class="{ uploaded: item.uploaded }">
-              <div class="checklist-icon">{{ item.uploaded ? '✓' : '○' }}</div>
+            <div
+              v-for="member in application.team.members"
+              :key="member.id"
+              class="checklist-item"
+              :class="{ uploaded: !!member.profile?.cv_path }"
+            >
+              <div class="checklist-icon">{{ member.profile?.cv_path ? '✓' : '○' }}</div>
               <div class="checklist-info">
-                <strong>{{ item.label }}</strong>
-                <span v-if="item.uploaded" class="checklist-meta">
-                  {{ item.doc?.filename }} · v{{ item.doc?.version }} · {{ ((item.doc?.file_size ?? 0) / 1024).toFixed(1) }} KB
-                </span>
-                <span v-else class="checklist-missing">Not uploaded</span>
-              </div>
-              <a v-if="item.uploaded && item.doc?.download_url" :href="item.doc.download_url" target="_blank" class="btn-secondary small">Download</a>
-            </div>
-          </div>
-
-          <!-- Other documents -->
-          <div v-if="otherDocuments.length > 0" class="other-docs">
-            <h3>Other Attachments</h3>
-            <div class="documents-list">
-              <div v-for="doc in otherDocuments" :key="doc.id" class="doc-card">
-                <div class="doc-info">
-                  <strong>{{ doc.filename }}</strong>
-                  <span class="doc-type">{{ doc.doc_type }}</span>
-                  <span class="doc-meta">v{{ doc.version }} · {{ (doc.file_size / 1024).toFixed(1) }} KB</span>
-                </div>
-                <a :href="doc.download_url" target="_blank" class="btn-secondary small">Download</a>
+                <strong>{{ member.first_name }} {{ member.last_name }}</strong>
+                <span v-if="member.profile?.cv_path" class="checklist-meta">CV nahraté</span>
+                <span v-else class="checklist-missing">CV chýba v profile</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Upload Document Modal -->
-        <div v-if="showUploadForm" class="modal-overlay" @click.self="showUploadForm = false">
-          <div class="modal">
-            <h2>Upload Document</h2>
-            <div class="field">
-              <label>Document Type</label>
-              <select v-model="uploadDocType">
-                <option value="executive_summary">Executive Summary</option>
-                <option value="tech_architecture">Technical Architecture</option>
-                <option value="roadmap">Roadmap</option>
-                <option value="budget">Budget</option>
-                <option value="risk_analysis">Risk Analysis</option>
-                <option value="monetization">Monetization Model</option>
-                <option value="cv">CV</option>
-                <option value="attachment">Attachment</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>File</label>
-              <input type="file" @change="handleFileChange" />
-            </div>
-            <p v-if="uploadError" class="error">{{ uploadError }}</p>
-            <div class="modal-actions">
-              <button @click="showUploadForm = false" class="btn-secondary">Cancel</button>
-              <button @click="handleUpload" :disabled="uploading" class="btn-primary">
-                {{ uploading ? 'Uploading...' : 'Upload' }}
-              </button>
-            </div>
+        <div class="section" v-if="isLeader && application.status === 'draft'">
+          <div class="section-header">
+            <h2>Submit Application</h2>
           </div>
+          <div v-if="missingCvs.length > 0" class="error" style="margin-bottom: 1rem;">
+            Nemôžete podať prihlášku. Nasledujúci členovia si musia aktualizovať profil: {{ missingCvs.join(', ') }}
+          </div>
+          <button @click="handleSubmit" :disabled="submitting || missingCvs.length > 0" class="btn-primary">
+            {{ submitting ? 'Submitting...' : 'Submit Application' }}
+          </button>
         </div>
 
-        <!-- Milestones -->
         <div class="section">
           <div class="section-header">
             <h2>Milestones</h2>
@@ -134,8 +137,8 @@
               <div class="milestone-info">
                 <strong>{{ milestone.title }}</strong>
                 <span v-if="milestone.due_date" class="due-date">
-          Due: {{ new Date(milestone.due_date).toLocaleDateString('sk-SK') }}
-        </span>
+                  Due: {{ new Date(milestone.due_date).toLocaleDateString('sk-SK') }}
+                </span>
                 <p v-if="milestone.comment" class="milestone-comment">{{ milestone.comment }}</p>
               </div>
               <div class="milestone-right">
@@ -151,7 +154,6 @@
           </div>
         </div>
 
-        <!-- Add Milestone Modal -->
         <div v-if="showMilestoneForm" class="modal-overlay" @click.self="showMilestoneForm = false">
           <div class="modal">
             <h2>Add Milestone</h2>
@@ -177,7 +179,6 @@
           </div>
         </div>
 
-        <!-- Transition Status (Admin only) -->
         <div class="section" v-if="authStore.isAdmin">
           <h2>Change Status</h2>
           <div class="field">
@@ -188,6 +189,10 @@
               </option>
             </select>
           </div>
+          <div class="field" v-if="['approved', 'rejected'].includes(newStatus)">
+            <label>Score</label>
+            <input type="number" v-model="score" placeholder="Enter score (0-100)" />
+          </div>
           <div class="field">
             <label>Decision Notes</label>
             <textarea v-model="decisionNotes" rows="3" placeholder="Optional notes..." />
@@ -197,19 +202,6 @@
           </button>
         </div>
       </div>
-
-      <!-- Submit Application (Student) -->
-      <div class="section" v-if="application && (isLeader && application.status === 'draft' || application.status === 'pending_supplement')">
-        <div class="section-header">
-          <h2>Submit Application</h2>
-        </div>
-        <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
-          Make sure all 6 required documents are uploaded before submitting.
-        </p>
-        <button @click="handleSubmit" :disabled="submitting" class="btn-primary">
-          {{ submitting ? 'Submitting...' : 'Submit Application' }}
-        </button>
-      </div>
     </div>
   </AppLayout>
 </template>
@@ -217,53 +209,142 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import { applicationsBApi } from '../api/applicationsb'
-import { documentsApi } from '../api/documents'
-import AppLayout from '../components/AppLayout.vue'
-import type { Application, Document, Milestone } from '../types'
-import { milestonesApi } from '../api/milestones'
-import { useTeamsStore } from '../stores/teams'
+import { useAuthStore } from '@/stores/auth.ts'
+import { applicationsBApi } from '@/api/program-b/applications.ts'
+import { milestonesApi } from '@/api/milestones.ts'
+import AppLayout from '../../components/AppLayout.vue'
+import type { ApiError, Application, Milestone, User } from '@/types'
 
-const teamsStore = useTeamsStore()
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+
+const application = ref<Application | null>(null)
+const milestones = ref<Milestone[]>([])
+const loading = ref(false)
 const submitting = ref(false)
 
-const isLeader = computed(() => {
-  if (!application.value || !authStore.user) return false
-  return application.value.team?.leader?.id === authStore.user.id
-})
+const availableMentors = ref<User[]>([])
+const loadingMentors = ref(false)
+const selectedMentorId = ref<string>('')
+const assigningMentor = ref(false)
 
-const allowedTransitions = computed(() => {
-  const transitions: Record<string, string[]> = {
-    submitted: ['formally_verified', 'rejected'],
-    formally_verified: ['in_evaluation', 'pending_supplement'],
-    in_evaluation: ['approved', 'rejected', 'pending_supplement'],
-    approved: ['onboarding'],
-    onboarding: ['active'],
-    active: ['paused', 'completed'],
-    paused: ['active', 'completed'],
-    completed: ['archived'],
-  }
-  return transitions[application.value?.status ?? ''] ?? []
-})
-
-async function handleSubmit() {
-  if (!application.value) return
-  submitting.value = true
-  try {
-    const response = await applicationsBApi.transition(application.value.id, 'submitted', '')
-    application.value = response.data
-  } catch (e: any) {
-    alert(e.response?.data?.message ?? 'Failed to submit application')
-  } finally {
-    submitting.value = false
-  }
-}
+const newStatus = ref('')
+const decisionNotes = ref('')
+const transitioning = ref(false)
 
 const showMilestoneForm = ref(false)
 const addingMilestone = ref(false)
 const milestoneError = ref<string | null>(null)
 const newMilestone = ref({ title: '', due_date: '', comment: '' })
+
+const score = ref<number | null>(null)
+
+const isLeader = computed(() => {
+  if (!application.value || !authStore.user) return false
+  return application.value.team?.leader_id === authStore.user.id
+})
+
+const missingCvs = computed(() => {
+  if (!application.value?.team?.members) return []
+  return application.value.team.members
+    .filter((m) => !m.profile || !m.profile.cv_path)
+    .map((m) => `${m.first_name} ${m.last_name}`)
+})
+
+const allowedTransitions = computed(() => {
+  return (application.value as any)?.available_transitions ?? [];
+});
+
+const activeMentorships = computed(() => {
+  if (!application.value?.mentorships) return []
+  return application.value.mentorships.filter(m => !m.ended_at)
+})
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const id = route.params.id as string
+    const appResponse = await applicationsBApi.getOne(id)
+    application.value = appResponse.data
+    milestones.value = application.value.milestones ?? []
+  } finally {
+    loading.value = false
+  }
+
+  // Загрузка менторов строго локализована и изолирована от глобального стора
+  if (authStore.isAdmin) {
+    loadingMentors.value = true
+    try {
+      availableMentors.value = await applicationsBApi.getMentors()
+    } catch (error) {
+      console.error('Failed to load mentors:', error)
+    } finally {
+      loadingMentors.value = false
+    }
+  }
+})
+
+async function handleAssignMentor() {
+  if (!application.value || !selectedMentorId.value) return
+
+  assigningMentor.value = true
+  try {
+    await applicationsBApi.assignMentor(application.value.id, selectedMentorId.value)
+
+    const response = await applicationsBApi.getOne(application.value.id)
+    application.value = response.data
+    selectedMentorId.value = ''
+  } catch (error: unknown) {
+    console.error('Failed to assign mentor:', error)
+  } finally {
+    assigningMentor.value = false
+  }
+}
+
+async function handleEndMentorship(mentorshipId: string) {
+  if (!application.value) return
+
+  if (!confirm('Are you sure you want to end this mentorship?')) return
+
+  try {
+    await applicationsBApi.endMentorship(application.value.id, mentorshipId)
+    const response = await applicationsBApi.getOne(application.value.id)
+    application.value = response.data
+  } catch (error: unknown) {
+    console.error('Failed to end mentorship:', error)
+  }
+}
+
+async function handleSubmit() {
+  if (!application.value || missingCvs.value.length > 0) return
+  submitting.value = true
+  try {
+    const response = await applicationsBApi.transition(application.value.id, 'submitted', '')
+    application.value = response.data
+  } catch (e: unknown) {
+    const apiError = e as ApiError
+    alert(apiError.response?.data?.message ?? 'Failed to submit application')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleTransition() {
+  if (!application.value || !newStatus.value) return
+  transitioning.value = true
+  try {
+    const response = await applicationsBApi.transition(application.value.id, newStatus.value, decisionNotes.value, score.value)
+    application.value = response.data
+    newStatus.value = ''
+    decisionNotes.value = ''
+  } catch (e: unknown) {
+    const apiError = e as ApiError
+    alert(apiError.response?.data?.message ?? 'Transition failed')
+  } finally {
+    transitioning.value = false
+  }
+}
 
 async function handleAddMilestone() {
   if (!application.value || !newMilestone.value.title) return
@@ -274,118 +355,23 @@ async function handleAddMilestone() {
     milestones.value.push(response.data)
     showMilestoneForm.value = false
     newMilestone.value = { title: '', due_date: '', comment: '' }
-  } catch (e: any) {
-    milestoneError.value = e.response?.data?.message ?? 'Failed to add milestone'
+  } catch (e: unknown) {
+    const apiError = e as ApiError
+    milestoneError.value = apiError.response?.data?.message ?? 'Failed to add milestone'
   } finally {
     addingMilestone.value = false
   }
 }
 
-async function handleMilestoneUpdate(milestone: any) {
+async function handleMilestoneUpdate(milestone: Milestone) {
   if (!application.value) return
   try {
     await milestonesApi.update(application.value.id, milestone.id, {
       status: milestone.status,
-      comment: milestone.comment,
+      comment: milestone.comment ?? undefined,
     })
-  } catch {
-  }
-}
-
-const router = useRouter()
-const route = useRoute()
-const authStore = useAuthStore()
-
-const application = ref<Application | null>(null)
-const documents = ref<Document[]>([])
-const milestones = ref<Milestone[]>([])
-const loading = ref(false)
-
-const showUploadForm = ref(false)
-const uploadDocType = ref('executive_summary')
-const uploadFile = ref<File | null>(null)
-const uploading = ref(false)
-const uploadError = ref<string | null>(null)
-
-const newStatus = ref('')
-const decisionNotes = ref('')
-const transitioning = ref(false)
-
-const REQUIRED_DOCS = [
-  { type: 'executive_summary', label: 'Executive Summary' },
-  { type: 'tech_architecture', label: 'Technical Architecture' },
-  { type: 'roadmap', label: 'Roadmap' },
-  { type: 'budget', label: 'Budget' },
-  { type: 'risk_analysis', label: 'Risk Analysis' },
-  { type: 'monetization', label: 'Monetization Model' },
-]
-
-const documentChecklist = computed(() =>
-  REQUIRED_DOCS.map(item => {
-    const doc = documents.value.find(d => d.doc_type === item.type)
-    return { ...item, uploaded: !!doc, doc }
-  })
-)
-
-const otherDocuments = computed(() =>
-  documents.value.filter(d => !REQUIRED_DOCS.find(r => r.type === d.doc_type))
-)
-
-const canUpload = computed(() =>
-  application.value && ['draft', 'pending_supplement'].includes(application.value.status)
-)
-
-onMounted(async () => {
-  loading.value = true
-  try {
-    const id = route.params.id as string
-    const [appResponse, docsResponse] = await Promise.all([
-      applicationsBApi.getOne(id),
-      documentsApi.getAll(id),
-    ])
-    application.value = appResponse.data
-    documents.value = docsResponse.data
-    milestones.value = application.value.milestones ?? []
-  } finally {
-    loading.value = false
-  }
-})
-
-function handleFileChange(e: Event) {
-  const target = e.target as HTMLInputElement
-  uploadFile.value = target.files?.[0] ?? null
-}
-
-async function handleUpload() {
-  if (!uploadFile.value || !application.value) return
-  uploading.value = true
-  uploadError.value = null
-  try {
-    const response = await documentsApi.upload(application.value.id, uploadFile.value, uploadDocType.value)
-    documents.value.push(response.data)
-    showUploadForm.value = false
-    uploadFile.value = null
-  } catch (e: any) {
-    uploadError.value = e.response?.data?.message ?? 'Upload failed'
-  } finally {
-    uploading.value = false
-  }
-}
-
-async function handleTransition() {
-  if (!application.value || !newStatus.value) return
-  console.log('Transitioning to:', newStatus.value)
-  transitioning.value = true
-  try {
-    const response = await applicationsBApi.transition(application.value.id, newStatus.value, decisionNotes.value)
-    console.log('Response:', response)
-    application.value = response.data
-    newStatus.value = ''
-    decisionNotes.value = ''
-  } catch (e: any) {
-    console.log('Error:', e.response?.data)
-  } finally {
-    transitioning.value = false
+  } catch (e: unknown) {
+    console.error('Failed to update milestone:', e)
   }
 }
 </script>
@@ -491,6 +477,13 @@ async function handleTransition() {
 }
 
 .detail-row:last-child { border-bottom: none; }
+
+.mentorship-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
 
 .label { color: #8892a4; width: 120px; flex-shrink: 0; font-size: 0.875rem; }
 

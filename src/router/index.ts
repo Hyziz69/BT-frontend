@@ -82,13 +82,13 @@ const router = createRouter({
     {
       path: '/applications-b',
       name: 'applications-b',
-      component: () => import('../views/ProgramBView.vue'),
+      component: () => import('../views/program-b/ApplicationsView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/applications-b/:id',
       name: 'application-b-detail',
-      component: () => import('../views/ProgramBDetailView.vue'),
+      component: () => import('../views/program-b/ApplicationDetailView.vue'),
     },
   ],
 })

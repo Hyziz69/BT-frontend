@@ -13,9 +13,18 @@
           <td>{{ application.call?.title ?? '-' }}</td>
           <td><span class="tag">{{ application.status }}</span></td>
           <td>
-              <span v-if="application.mentorships?.length">
-                {{ application.mentorships.map((m) => mentorName(m.mentor)).join(', ') }}
-              </span>
+            <ul v-if="application.mentorships?.length" class="mentor-list">
+              <li v-for="mentorship in application.mentorships.filter(m => !m.ended_at)" :key="mentorship.id">
+                {{ mentorName(mentorship.mentor) }}
+                <button
+                  @click="removeMentor(application.id, mentorship.id)"
+                  class="btn-text-danger"
+                  title="End mentorship"
+                >
+                  ✕
+                </button>
+              </li>
+            </ul>
             <span v-else class="muted">-</span>
           </td>
           <td class="assign-cell">
@@ -47,12 +56,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAdminStore } from '@/stores/admin.ts'
+import type { User } from '@/types'
 
 const adminStore = useAdminStore()
 
 const selectedMentorByApplication = ref<Record<string, string>>({})
 
-function mentorName(mentor: any) {
+function mentorName(mentor: User) {
   if (!mentor) return '-'
   return `${mentor.first_name} ${mentor.last_name}`
 }
@@ -63,6 +73,11 @@ async function assignMentor(applicationId: string) {
 
   await adminStore.assignMentor(applicationId, mentorId)
   selectedMentorByApplication.value[applicationId] = '' // Очищаем селект
+}
+
+async function removeMentor(applicationId: string, mentorshipId: string) {
+  if (!confirm('Are you sure you want to end this mentorship?')) return;
+  await adminStore.endMentorship(applicationId, mentorshipId);
 }
 </script>
 

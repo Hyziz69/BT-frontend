@@ -94,11 +94,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import { applicationsBApi } from '../api/applicationsb'
-import { callsApi } from '../api/calls'
-import api from '../api/axios'
-import AppLayout from '../components/AppLayout.vue'
+import { useAuthStore } from '@/stores/auth.ts'
+import { applicationsBApi } from '@/api/program-b/applications.ts'
+import { callsApi } from '@/api/program-b/calls.ts'
+import api from '../../api/axios.ts'
+import AppLayout from '../../components/AppLayout.vue'
 import type { Application } from '@/types'
 
 const router = useRouter()
@@ -106,7 +106,7 @@ const authStore = useAuthStore()
 
 const applications = ref<Application[]>([])
 const programBCalls = ref<any[]>([])
-const programBChallenges = ref<any[]>([]) // Новое состояние для челленджей
+const programBChallenges = ref<any[]>([])
 const loading = ref(false)
 const creating = ref(false)
 const appError = ref<string | null>(null)

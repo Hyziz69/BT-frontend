@@ -12,16 +12,21 @@ export interface User {
     | 'superadmin'
     | 'evaluator'
   status: 'active' | 'pending' | 'suspended'
+  profile?: StudentProfile
 }
 
-export interface TeamMember {
+export interface StudentProfile {
   id: string
-  first_name: string
-  last_name: string
-  email: string
-  role: 'leader' | 'member'
-  joined_at: string
-  pivot: {
+  user_id: string
+  study_program: string | null
+  study_year: number | null
+  skills: string[] | null
+  cv_path: string | null
+  academic_declaration: boolean
+}
+
+export interface TeamMember extends User {
+  pivot?: {
     team_id: string
     user_id: string
     role: string
@@ -31,17 +36,15 @@ export interface TeamMember {
 
 export interface Team {
   id: string
+  leader_id: string
   name: string
   invite_code: string
-  competencies: string[]
-  leader: {
-    id: string
-    name: string
-    email: string
-  }
-  members: TeamMember[]
-  member_count: number
+  competencies: string[] | null
+  member_count?: number
   created_at: string
+  updated_at: string | null
+  leader?: User
+  members?: TeamMember[]
 }
 
 export interface Application {
@@ -58,6 +61,20 @@ export interface Application {
   call?: Call
   documents?: Document[]
   milestones?: Milestone[]
+  mentorship?: Mentorship[];
+  available_transitions?: string[];
+}
+
+export interface Mentorship {
+  id: string
+  application_id: string
+  mentor_id: string
+  notes: string | null
+  started_at: string | null
+  ended_at: string | null
+  created_at: string | null
+  updated_at: string | null
+  mentor: User
 }
 
 export interface Call {
@@ -90,18 +107,26 @@ export interface Document {
 
 export interface Milestone {
   id: string
+  application_id: string
   title: string
   status: 'pending' | 'in_progress' | 'completed' | 'overdue'
   due_date: string | null
   comment: string | null
   is_overdue: boolean
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface ApiError {
+  response?: {
+    data?: {
+      message?: string
+    }
+  }
 }
 
 export interface ApiResponse<T> {
   data: T
-  team: T
 }
 
 export interface PaginatedResponse<T> {

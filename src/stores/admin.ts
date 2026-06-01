@@ -147,6 +147,12 @@ export const useAdminStore = defineStore('admin', () => {
     'Mentor assigned successfully.'
   )
 
+  const endMentorship = (appId: string, mentorshipId: string) => runAction(
+    () => adminApi.endMentorship(appId, mentorshipId),
+    () => fetchApplications(),
+    'Mentorship ended successfully.'
+  )
+
 
   // ==============================
   // 5. ЭКСПОРТ (ВОЗВРАТ)
@@ -162,6 +168,6 @@ export const useAdminStore = defineStore('admin', () => {
     approveUser, rejectUser,
     createProgram, updateProgram,
     createCall, updateCall, openCall, closeCall,
-    assignMentor
+    assignMentor, fetchUsers, endMentorship
   }
 })

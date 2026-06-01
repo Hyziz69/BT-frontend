@@ -1,4 +1,4 @@
-import api from './axios'
+import api from '../axios.ts'
 import type { ApiResponse, Application } from '@/types'
 
 const BASE_URL = '/program-b/applications'
@@ -24,8 +24,12 @@ export const applicationsBApi = {
     return api.post<Application>(`${BASE_URL}/${id}/select`)
   },
 
-  assignMentor(id: string | number, mentorId: string | number) {
-    return api.post<Application>(`${BASE_URL}/${id}/assign-mentor`, { mentor_id: mentorId })
+  assignMentor(applicationId: string | number, mentorId: string | number) {
+    return api.post<Application>(`${BASE_URL}/${applicationId}/mentorships`, { mentor_id: mentorId })
+  },
+
+  endMentorship(applicationId: string, mentorshipId: string) {
+    return api.patch(`${BASE_URL}/${applicationId}/mentorships/${mentorshipId}/end`);
   },
 
   assignPo(id: string | number, poId: string | number) {
@@ -35,4 +39,17 @@ export const applicationsBApi = {
   approveDelivery(id: string | number) {
     return api.post<Application>(`${BASE_URL}/${id}/approve-delivery`)
   },
+
+  transition(id: string | number, status: string, decision_notes: string | null, score: number | null) {
+    return api.patch<Application>(`${BASE_URL}/${id}/transition`, { status, decision_notes, score })
+  },
+
+  getMentors() {
+    return api.get('/admin/users', {
+      params: {
+        account_type: 'mentor',
+        status: 'active'
+      }
+    }).then(response => response.data);
+  }
 }

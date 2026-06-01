@@ -141,9 +141,16 @@ export const adminApi = {
 
   assignMentor(applicationId: string, mentorId: string, notes?: string) {
     return api
-      .patch(`/admin/applications/${applicationId}/assign-mentor`, {
+      .post(`/program-b/applications/${applicationId}/mentorships`, {
         mentor_id: mentorId,
         notes,
+      })
+      .then((r) => r.data)
+  },
+  endMentorship(applicationId: string, mentorshipId: string, notes?: string) {
+    return api
+      .patch(`/program-b/applications/${applicationId}/mentorships/${mentorshipId}/end`, {
+        notes
       })
       .then((r) => r.data)
   },

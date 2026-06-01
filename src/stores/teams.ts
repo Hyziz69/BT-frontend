@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { teamsApi } from '../api/teams'
-import type { Team } from '../types'
+import { teamsApi } from '../api/program-b/teams.ts'
+import type { Team } from '@/types'
 
 export const useTeamsStore = defineStore('teams', () => {
   const teams = ref<Team[]>([])
@@ -119,7 +119,7 @@ export const useTeamsStore = defineStore('teams', () => {
     fetchTeams,
     fetchTeam,
     createTeam,
-    joinTeam, // Экспортируем новый метод
+    joinTeam,
     removeMember,
     leaveTeam
   }
