@@ -7,6 +7,7 @@
 
       <div v-else-if="teamsStore.currentTeam">
         <!-- Header -->
+
         <div class="page-header">
           <div class="header-content">
             <div class="team-icon">◈</div>
@@ -25,8 +26,8 @@
         <div class="section">
           <div class="section-header">
             <h2>Members</h2>
-            <button v-if="isLeader" @click="showAddMember = true" class="btn-primary">
-              + Invite Member
+            <button v-if="isLeader" @click="copyInviteCode" class="btn-primary">
+              + Invite Code: {{teamsStore.currentTeam.invite_code}}
             </button>
           </div>
 
@@ -37,63 +38,27 @@
               class="member-card"
             >
               <div class="member-avatar">
-                {{ member.name.charAt(0).toUpperCase() }}
+                {{ member.first_name ? member.first_name.charAt(0).toUpperCase() : 'U' }}
               </div>
               <div class="member-info">
-                <strong>{{ member.name }}</strong>
+                <strong>{{ member.first_name }} {{ member.last_name }}</strong>
                 <span class="email">{{ member.email }}</span>
               </div>
               <div class="member-right">
-                <span class="role-badge" :class="member.role">{{ member.role }}</span>
+                <span class="role-badge" :class="member.pivot.role">{{ member.pivot.role }}</span>
                 <button
-                  v-if="isLeader && member.role !== 'leader'"
+                  v-if="isLeader && member.pivot.role !== 'leader'"
                   @click="handleRemoveMember(member.id)"
                   class="btn-danger"
                 >
                   Remove
                 </button>
+                <button v-if="member.id === authStore.user?.id" @click="handleLeaveTeam" class="btn-danger">Leave</button>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pending Invitations -->
-        <div class="section" v-if="isLeader && invitations.length > 0">
-          <h2>Pending Invitations</h2>
-          <div class="members-list">
-            <div v-for="inv in invitations" :key="inv.id" class="member-card">
-              <div class="member-avatar invite">✉</div>
-              <div class="member-info">
-                <strong>{{ inv.email }}</strong>
-                <span class="email">Expires: {{ new Date(inv.expires_at).toLocaleDateString('sk-SK') }}</span>
-              </div>
-              <span class="role-badge" :class="inv.status">{{ inv.status }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Invite Member Modal -->
-        <div v-if="showAddMember" class="modal-overlay" @click.self="showAddMember = false; inviteSuccess = null">
-          <div class="modal">
-            <h2>Invite Member</h2>
-            <div class="field" v-if="!inviteSuccess">
-              <label>Student Email</label>
-              <input v-model="memberEmail" type="email" placeholder="student@example.com" />
-            </div>
-            <p v-if="inviteSuccess" class="success">{{ inviteSuccess }}</p>
-            <p v-if="inviteError" class="error">{{ inviteError }}</p>
-            <div class="modal-actions">
-              <button @click="showAddMember = false; inviteSuccess = null" class="btn-secondary">
-                {{ inviteSuccess ? 'Close' : 'Cancel' }}
-              </button>
-              <button v-if="!inviteSuccess" @click="handleInvite" :disabled="inviting" class="btn-primary">
-                {{ inviting ? 'Sending...' : 'Send Invitation' }}
-              </button>
             </div>
           </div>
         </div>
       </div>
-
       <div v-else class="error">Team not found.</div>
     </div>
   </AppLayout>
@@ -104,7 +69,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTeamsStore } from '../stores/teams'
 import { useAuthStore } from '../stores/auth'
-import { invitationsApi } from '../api/invitations'
 import AppLayout from '../components/AppLayout.vue'
 
 const router = useRouter()
@@ -123,15 +87,21 @@ const isLeader = computed(() => teamsStore.currentTeam?.leader.id === authStore.
 
 onMounted(async () => {
   await teamsStore.fetchTeam(route.params.id as string)
-  if (teamsStore.currentTeam?.leader.id === authStore.user?.id && teamsStore.currentTeam) {
-    try {
-      const res = await invitationsApi.getAll(teamsStore.currentTeam.id)
-      invitations.value = res.data ?? []
-    } catch {
-      invitations.value = []
-    }
-  }
 })
+
+async function copyInviteCode() {
+  const code = teamsStore.currentTeam?.invite_code
+
+  if (!code) return
+
+  try {
+    // Копируем текст
+    await navigator.clipboard.writeText(code)
+    alert('Kód pozvánky bol skopírovaný!')
+  } catch (err) {
+    console.error('Nepodarilo sa skopírovať kód: ', err)
+  }
+}
 
 async function handleInvite() {
   if (!teamsStore.currentTeam) return
@@ -162,6 +132,22 @@ async function handleRemoveMember(userId: string) {
   if (confirm('Are you sure you want to remove this member?')) {
     await teamsStore.removeMember(teamsStore.currentTeam!.id, userId)
     await teamsStore.fetchTeam(route.params.id as string)
+  }
+}
+async function handleLeaveTeam() {
+  if (!teamsStore.currentTeam) return
+
+  const message = isLeader.value
+    ? 'Pozor! Ste lídrom tímu. Ak opustíte tím, celý tím bude úplne vymazaný a rozpustený. Naozaj chcete pokračovať?'
+    : 'Naozaj chcete opustiť tento tím?';
+
+  if (confirm(message)) {
+    try {
+      await teamsStore.leaveTeam(teamsStore.currentTeam.id)
+      router.push('/teams')
+    } catch (e) {
+      console.error('Chyba pri opúšťaní tímu:', e)
+    }
   }
 }
 </script>
