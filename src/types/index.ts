@@ -12,6 +12,37 @@ export interface User {
     | 'superadmin'
     | 'evaluator'
   status: 'active' | 'pending' | 'suspended'
+  company_id?: string | null
+  company_role?: CompanyRole | null
+}
+
+export type CompanyRole = 'owner' | 'manager' | 'member'
+
+export interface Company {
+  id: string
+  name: string
+  ico: string | null
+  sector: string | null
+  description: string | null
+  website: string | null
+  status: 'active' | 'pending' | 'inactive'
+}
+
+export interface CompanyMember {
+  id: string
+  name: string
+  email: string
+  role: CompanyRole
+  role_label: string
+  status: string
+}
+
+export interface CompanyInvitation {
+  id: string
+  email: string
+  role: CompanyRole
+  status: string
+  expires_at: string
 }
 
 export interface TeamMember {
@@ -48,6 +79,7 @@ export interface Application {
   updated_at: string
   team?: Team
   call?: Call
+  challenge?: Challenge & { company?: { id: string; name: string } }
   documents?: Document[]
   milestones?: Milestone[]
 }
@@ -62,6 +94,20 @@ export interface Call {
     type: 'program_a' | 'program_b'
     name: string
   }
+}
+
+export interface Challenge {
+  id: string
+  title: string
+  technical_spec?: string | null
+  status: 'draft' | 'published' | 'matching' | 'assigned' | 'in_progress' | 'closed'
+  budget?: number | string | null
+  company_id: string
+  call_id?: string | null
+  product_owner_id?: string | null
+  team_id?: string | null
+  candidates_count?: number
+  created_at?: string
 }
 
 export interface Document {

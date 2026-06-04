@@ -50,6 +50,12 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
+      path: '/company-invitation/accept',
+      name: 'company-invitation-accept',
+      component: () => import('../views/CompanyInvitationAcceptView.vue'),
+      meta: { requiresAuth: false },
+    },
+    {
       path: '/programy',
       name: 'programs',
       component: () => import('../views/ProgramsView.vue'),
@@ -89,6 +95,18 @@ const router = createRouter({
       path: '/applications/:id',
       name: 'application-detail',
       component: () => import('../views/ApplicationDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/challenges',
+      name: 'challenges',
+      component: () => import('../views/ChallengesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/company',
+      name: 'company',
+      component: () => import('../views/CompanyView.vue'),
       meta: { requiresAuth: true },
     },
     {

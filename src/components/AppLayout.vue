@@ -22,6 +22,16 @@
           <span>Applications</span>
         </RouterLink>
 
+        <RouterLink v-if="isStudent" to="/challenges" class="nav-item">
+          <span class="nav-icon">◆</span>
+          <span>Challenges</span>
+        </RouterLink>
+
+        <RouterLink v-if="isCompany" to="/company" class="nav-item">
+          <span class="nav-icon">⌂</span>
+          <span>Company</span>
+        </RouterLink>
+
         <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
           <span class="nav-icon">★</span>
           <span>Admin</span>
@@ -80,6 +90,8 @@ const authStore = useAuthStore()
 const user = computed(() => authStore.user as any)
 
 const isStudent = computed(() => user.value?.account_type === 'student')
+
+const isCompany = computed(() => user.value?.account_type === 'company_contact')
 
 const isAdmin = computed(() =>
   ['nti_admin', 'superadmin'].includes(user.value?.account_type ?? ''),
