@@ -203,9 +203,9 @@
             <label>Call *</label>
             <select v-model="createForm.call_id" class="role-select full" :disabled="!selectedProgramId || callsLoading">
               <option value="" disabled>
-                {{ callsLoading ? 'Loading calls…' : (calls.length ? '-- Select call --' : 'No open calls') }}
+                {{ callsLoading ? 'Loading calls…' : (availableCalls.length ? '-- Select call --' : 'No open calls') }}
               </option>
-              <option v-for="c in calls" :key="c.id" :value="c.id">{{ c.title }}</option>
+              <option v-for="c in availableCalls" :key="c.id" :value="c.id">{{ c.title }}</option>
             </select>
           </div>
 
@@ -302,7 +302,7 @@ const createForm = ref<{ title: string; technical_spec: string; budget: number |
 })
 const programs = ref<ProgramOption[]>([])
 const selectedProgramId = ref('')
-const calls = ref<CallOption[]>([])
+const availableCalls = ref<CallOption[]>([])
 const callsLoading = ref(false)
 const roleLabels: Record<string, string> = { owner: 'Owner', manager: 'Manager', member: 'Member' }
 const myRoleLabel = computed(() => (myRole.value ? roleLabels[myRole.value] : ''))
@@ -392,14 +392,14 @@ async function handleSelect(ch: Challenge, app: Application) {
 async function openCreate() {
   createForm.value = { title: '', technical_spec: '', budget: null, call_id: '' }
   selectedProgramId.value = ''
-  calls.value = []
+  availableCalls.value = []
   createError.value = null
   showCreate.value = true
   try {
     const res = await programsApi.listProgramB()
     programs.value = res.programs
     // Auto-select when there is exactly one program.
-    if (programs.value.length === 1) {
+    if (programs.value.length === 1 && programs.value[0]) {
       selectedProgramId.value = programs.value[0].id
       await onProgramChange()
     }
@@ -414,14 +414,14 @@ function closeCreate() {
 
 async function onProgramChange() {
   createForm.value.call_id = ''
-  calls.value = []
+  availableCalls.value = []
   if (!selectedProgramId.value) return
   callsLoading.value = true
   try {
     const res = await programsApi.callsFor(selectedProgramId.value)
-    calls.value = res.calls
+    availableCalls.value = res.calls ?? []
   } catch {
-    calls.value = []
+    availableCalls.value = []
   } finally {
     callsLoading.value = false
   }

@@ -23,6 +23,8 @@ export const programsApi = {
 
   // Open calls for a given program.
   callsFor(programId: string): Promise<{ calls: CallOption[] }> {
-    return api.get('/program-b/calls', { params: { program_id: programId } }).then((r) => r.data)
+    return api.get('/program-b/calls', { params: { program_id: programId } }).then((r) => ({
+      calls: r.data.data ?? []
+    }))
   },
 }

@@ -211,6 +211,19 @@
           {{ submitting ? 'Submitting...' : 'Submit Application' }}
         </button>
       </div>
+
+      <!-- Company Accept (company_contact only) -->
+      <div class="section" v-if="authStore.user?.account_type === 'company_contact' && application.status === 'submitted'">
+        <div class="section-header">
+          <h2>Review Application</h2>
+        </div>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
+          If this project interests your company, you can accept it to start a collaboration.
+        </p>
+        <button @click="handleCompanyAccept" :disabled="transitioning" class="btn-primary">
+          ✓ Accept Application
+        </button>
+      </div>
       <!-- Delete Confirmation Modal -->
     <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
       <div class="modal modal-sm">
@@ -247,6 +260,19 @@ const submitting = ref(false)
 const deleteTarget = ref<Document | null>(null)
 const deleting = ref(false)
 const submitError = ref<string | null>(null)
+
+  async function handleCompanyAccept() {
+  if (!application.value) return
+  transitioning.value = true
+  try {
+    const response = await applicationsApi.transition(application.value.id, 'approved', 'Accepted by company representative.')
+    application.value = response.data
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Failed to accept application')
+  } finally {
+    transitioning.value = false
+  }
+}
 
 async function handleViewDocument(doc: Document) {
   if (!application.value) return
