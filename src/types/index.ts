@@ -108,6 +108,11 @@ export interface Challenge {
   team_id?: string | null
   candidates_count?: number
   created_at?: string
+  updated_at?: string
+  company?: { id: string; name: string } | null
+  product_owner?: { id: string; first_name: string; last_name: string } | null
+  call?: { id: string; title: string } | null
+  selected_team?: { id: string; name: string } | null
 }
 
 export interface Document {

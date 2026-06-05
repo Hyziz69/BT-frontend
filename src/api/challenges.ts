@@ -1,6 +1,12 @@
 import api from './axios'
 import type { Application, Challenge } from '../types'
 
+export interface PersonOption {
+  id: string
+  first_name: string
+  last_name: string
+}
+
 export interface ChallengePayload {
   title: string
   technical_spec: string
@@ -15,7 +21,14 @@ export const challengesApi = {
     return api.get('/program-b/challenges').then((r) => r.data)
   },
 
-  get(id: string): Promise<{ challenge: Challenge }> {
+  get(id: string): Promise<{
+    challenge: Challenge
+    can_manage: boolean
+    po_candidates?: PersonOption[]
+    mentor_candidates?: PersonOption[]
+    assigned_application_id?: string
+    current_mentor?: { id: string; name: string } | null
+  }> {
     return api.get(`/program-b/challenges/${id}`).then((r) => r.data)
   },
 
@@ -62,5 +75,12 @@ export const challengeApplicationsApi = {
   // Select the winning team; backend auto-rejects the others for this challenge.
   select(applicationId: string): Promise<{ message: string }> {
     return api.post(`/program-b/applications/${applicationId}/select`).then((r) => r.data)
+  },
+
+  // Admin assigns a university mentor to the selected team's project.
+  assignMentor(applicationId: string, mentorId: string): Promise<{ message: string }> {
+    return api
+      .post(`/program-b/applications/${applicationId}/assign-mentor`, { mentor_id: mentorId })
+      .then((r) => r.data)
   },
 }

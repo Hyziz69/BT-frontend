@@ -131,10 +131,11 @@
             <div v-for="ch in challenges" :key="ch.id" class="challenge-card">
               <div class="challenge-row">
                 <div class="challenge-main">
-                  <strong>{{ ch.title }}</strong>
+                  <RouterLink :to="`/challenges/${ch.id}`" class="challenge-link">{{ ch.title }}</RouterLink>
                   <span class="status-badge" :class="ch.status">{{ ch.status }}</span>
                 </div>
                 <div class="challenge-actions">
+                  <RouterLink :to="`/challenges/${ch.id}`" class="btn-secondary">Open →</RouterLink>
                   <button v-if="ch.status === 'draft'" @click="handlePublish(ch)" class="btn-secondary">
                     Publish
                   </button>
@@ -792,6 +793,8 @@ input:focus, textarea:focus { outline: none; border-color: #6ee7b7; }
 .challenge-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .challenge-main { display: flex; align-items: center; gap: 0.75rem; }
 .challenge-main strong { font-size: 0.95rem; color: #0f1117; }
+.challenge-link { font-size: 0.95rem; font-weight: 700; color: #0f1117; text-decoration: none; }
+.challenge-link:hover { color: #16a34a; text-decoration: underline; }
 .challenge-actions { display: flex; align-items: center; gap: 0.6rem; }
 
 .status-badge {

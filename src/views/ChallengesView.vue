@@ -20,7 +20,10 @@
           <div class="app-list">
             <div v-for="app in myApps" :key="app.id" class="app-row">
               <div class="app-info">
-                <strong>{{ app.challenge?.title ?? 'Challenge' }}</strong>
+                <RouterLink v-if="app.challenge?.id" :to="`/challenges/${app.challenge.id}`" class="app-title-link">
+                  {{ app.challenge?.title ?? 'Challenge' }}
+                </RouterLink>
+                <strong v-else>{{ app.challenge?.title ?? 'Challenge' }}</strong>
                 <span class="muted">
                   {{ app.challenge?.company?.name ?? '' }}
                   · applied {{ app.submitted_at ? formatDate(app.submitted_at) : '' }}
@@ -39,7 +42,7 @@
         <div v-else class="challenge-grid">
           <div v-for="ch in challenges" :key="ch.id" class="challenge-card">
             <div class="card-top">
-              <strong class="card-title">{{ ch.title }}</strong>
+              <RouterLink :to="`/challenges/${ch.id}`" class="card-title link">{{ ch.title }}</RouterLink>
               <span class="status-badge" :class="ch.status">{{ ch.status }}</span>
             </div>
             <div class="card-meta">
@@ -331,4 +334,9 @@ textarea:focus { outline: none; border-color: #6ee7b7; }
 .app-status.ok { background: #dcfce7; color: #166534; }
 .app-status.done { background: #ede9fe; color: #6d28d9; }
 .app-status.rejected { background: #fee2e2; color: #991b1b; }
+
+.card-title.link { text-decoration: none; cursor: pointer; }
+.card-title.link:hover { color: #16a34a; text-decoration: underline; }
+.app-title-link { font-size: 0.9rem; font-weight: 700; color: #0f1117; text-decoration: none; }
+.app-title-link:hover { color: #16a34a; text-decoration: underline; }
 </style>

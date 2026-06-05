@@ -5,6 +5,13 @@
 
       <div v-if="loading">Loading application...</div>
 
+      <div v-else-if="loadError" class="load-error">
+        <div class="load-error-icon">⚠</div>
+        <h3>Can't open this application</h3>
+        <p>{{ loadError }}</p>
+        <button @click="router.push('/applications')" class="btn-primary">← Back to Applications</button>
+      </div>
+
       <div v-else-if="application">
         <!-- Header -->
         <div class="page-header">
@@ -397,6 +404,7 @@ const application = ref<Application | null>(null)
 const documents = ref<Document[]>([])
 const milestones = ref<Milestone[]>([])
 const loading = ref(false)
+const loadError = ref<string | null>(null)
 
 const uploading = ref(false)
 const uploadError = ref<string | null>(null)
@@ -431,6 +439,7 @@ const canUpload = computed(() =>
 
 onMounted(async () => {
   loading.value = true
+  loadError.value = null
   try {
     const id = route.params.id as string
     const [appResponse, docsResponse] = await Promise.all([
@@ -440,6 +449,13 @@ onMounted(async () => {
     application.value = appResponse.data
     documents.value = docsResponse.data
     milestones.value = application.value.milestones ?? []
+  } catch (e: any) {
+    loadError.value =
+      e?.response?.status === 403
+        ? "You don't have access to this application."
+        : e?.response?.status === 404
+          ? 'This application no longer exists.'
+          : (e?.response?.data?.message ?? 'Failed to load this application.')
   } finally {
     loading.value = false
   }
@@ -467,6 +483,21 @@ async function handleTransition() {
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
 .app-detail { max-width: 900px; }
+
+.load-error {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-top: 1rem;
+}
+.load-error-icon { font-size: 2.5rem; color: #f59e0b; margin-bottom: 0.75rem; }
+.load-error h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.1rem; font-weight: 700; color: #0f1117; margin: 0 0 0.4rem 0;
+}
+.load-error p { color: #8892a4; margin: 0 0 1.5rem 0; }
 
 .back-btn {
   background: none;

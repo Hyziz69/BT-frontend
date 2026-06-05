@@ -104,6 +104,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/challenges/:id',
+      name: 'challenge-detail',
+      component: () => import('../views/ChallengeDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/company',
       name: 'company',
       component: () => import('../views/CompanyView.vue'),
