@@ -115,6 +115,67 @@ export interface Challenge {
   selected_team?: { id: string; name: string } | null
 }
 
+export interface Consultation {
+  id: string
+  scheduled_at: string | null
+  notes: string | null
+  feedback: string | null
+  created_at?: string
+}
+
+export interface MentorshipPerson {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+}
+
+export interface StudentProject {
+  id: string
+  status: string
+  submitted_at: string | null
+  decided_at: string | null
+  challenge?: {
+    id: string
+    title: string
+    status: string
+    technical_spec?: string | null
+    budget?: number | string | null
+    company?: { id: string; name: string } | null
+  } | null
+  team?: { id: string; name: string; members?: MentorshipPerson[] }
+  milestones?: Milestone[]
+  mentorships?: {
+    id: string
+    mentor?: { id: string; first_name: string; last_name: string } | null
+    consultations?: Consultation[]
+  }[]
+}
+
+export interface Mentorship {
+  id: string
+  mentor_id: string
+  notes: string | null
+  started_at: string | null
+  ended_at: string | null
+  consultations_count?: number
+  consultations?: Consultation[]
+  application?: {
+    id: string
+    status: string
+    team?: { id: string; name: string; members?: MentorshipPerson[] }
+    challenge?: {
+      id: string
+      title: string
+      status: string
+      technical_spec?: string | null
+      company?: { id: string; name: string } | null
+    } | null
+    call?: { id: string; program?: { id: string; name: string } } | null
+    milestones?: Milestone[]
+  }
+}
+
 export interface Document {
   id: string
   doc_type: string

@@ -29,7 +29,16 @@
                   · applied {{ app.submitted_at ? formatDate(app.submitted_at) : '' }}
                 </span>
               </div>
-              <span class="app-status" :class="statusClass(app.status)">{{ statusLabel(app.status) }}</span>
+              <div class="app-right">
+                <span class="app-status" :class="statusClass(app.status)">{{ statusLabel(app.status) }}</span>
+                <RouterLink
+                  v-if="['approved', 'active', 'completed'].includes(app.status)"
+                  :to="`/projects/${app.id}`"
+                  class="project-link"
+                >
+                  Open project →
+                </RouterLink>
+              </div>
             </div>
           </div>
         </div>
@@ -339,4 +348,7 @@ textarea:focus { outline: none; border-color: #6ee7b7; }
 .card-title.link:hover { color: #16a34a; text-decoration: underline; }
 .app-title-link { font-size: 0.9rem; font-weight: 700; color: #0f1117; text-decoration: none; }
 .app-title-link:hover { color: #16a34a; text-decoration: underline; }
+.app-right { display: flex; align-items: center; gap: 0.85rem; }
+.project-link { font-size: 0.8rem; font-weight: 600; color: #16a34a; text-decoration: none; white-space: nowrap; }
+.project-link:hover { text-decoration: underline; }
 </style>

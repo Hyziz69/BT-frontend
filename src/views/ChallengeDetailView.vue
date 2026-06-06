@@ -106,6 +106,44 @@
           </div>
         </div>
 
+        <!-- Project progress (once a team is assigned) -->
+        <div v-if="canManage && project" class="section">
+          <div class="section-head">
+            <h2>Project progress</h2>
+            <button
+              v-if="['assigned', 'in_progress'].includes(challenge.status)"
+              @click="approveDelivery"
+              class="btn-primary"
+              :disabled="saving"
+            >
+              ✓ Approve delivery
+            </button>
+          </div>
+
+          <div class="detail-grid">
+            <div class="detail-row"><span class="label">Team</span><span class="strong">{{ project.team?.name }}</span></div>
+            <div class="detail-row"><span class="label">Mentor</span><span>{{ projectMentorName ?? 'Not assigned yet' }}</span></div>
+          </div>
+
+          <h3 class="sub">Milestones</h3>
+          <div v-if="(project.milestones ?? []).length === 0" class="hint">No milestones yet.</div>
+          <div v-else class="prog-list">
+            <div v-for="m in project.milestones" :key="m.id" class="prog-row">
+              <span class="pill" :class="msCls(m.status)">{{ m.status.replace('_', ' ') }}</span>
+              <span class="prog-title">{{ m.title }}</span>
+            </div>
+          </div>
+
+          <h3 class="sub">Latest mentor feedback</h3>
+          <div v-if="projectConsultations.length === 0" class="hint">No consultations logged yet.</div>
+          <div v-else class="prog-list">
+            <div v-for="c in projectConsultations.slice(0, 3)" :key="c.id" class="consult-mini">
+              <strong>{{ c.scheduled_at ? new Date(c.scheduled_at).toLocaleDateString('sk-SK') : '' }}</strong>
+              <span>{{ c.feedback || c.notes || '—' }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Candidate teams (managers) -->
         <div v-if="canManage" class="section">
           <div class="section-head">
@@ -170,7 +208,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { challengesApi, challengeApplicationsApi, type PersonOption } from '../api/challenges'
 import AppLayout from '../components/AppLayout.vue'
-import type { Application, Challenge } from '../types'
+import type { Application, Challenge, Consultation, StudentProject } from '../types'
 
 const route = useRoute()
 const router = useRouter()
@@ -183,6 +221,32 @@ const error = ref('')
 const challenge = ref<Challenge | null>(null)
 const canManage = ref(false)
 const candidates = ref<Application[]>([])
+const project = ref<StudentProject | null>(null)
+
+const projectConsultations = computed<Consultation[]>(() =>
+  (project.value?.mentorships ?? [])
+    .flatMap((m) => m.consultations ?? [])
+    .sort((a, b) => (b.scheduled_at ?? '').localeCompare(a.scheduled_at ?? '')),
+)
+const projectMentorName = computed(() => {
+  const mentor = project.value?.mentorships?.find((m) => m.mentor)?.mentor
+  return mentor ? `${mentor.first_name} ${mentor.last_name}`.trim() : null
+})
+function msCls(s: string) {
+  return s === 'completed' ? 'green' : s === 'overdue' ? 'red' : s === 'in_progress' ? 'amber' : 'grey'
+}
+
+async function approveDelivery() {
+  if (!assignedApplicationId.value) return
+  if (!confirm('Approve the final delivery and close this project?')) return
+  saving.value = true
+  try {
+    await challengeApplicationsApi.approveDelivery(assignedApplicationId.value)
+    await load()
+  } finally {
+    saving.value = false
+  }
+}
 
 const poCandidates = ref<PersonOption[]>([])
 const mentorCandidates = ref<PersonOption[]>([])
@@ -244,6 +308,12 @@ async function load() {
     if (canManage.value) {
       const c = await challengesApi.candidates(id).catch(() => ({ applications: [] }))
       candidates.value = c.applications
+    }
+    // Load progress (mentor, milestones, consultations) once a team is assigned.
+    project.value = null
+    if (canManage.value && assignedApplicationId.value) {
+      const p = await challengeApplicationsApi.project(assignedApplicationId.value).catch(() => null)
+      project.value = p?.application ?? null
     }
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? 'Could not load this challenge.'
@@ -476,4 +546,13 @@ onMounted(load)
 .status-badge.amber { background: #fef3c7; color: #92400e; }
 .status-badge.violet { background: #ede9fe; color: #6d28d9; }
 .status-badge.green, .pill.green { background: #dcfce7; color: #166534; }
+.pill.amber { background: #fef3c7; color: #92400e; }
+.pill.red { background: #fee2e2; color: #991b1b; }
+
+.sub { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; font-weight: 700; color: #6b7280; margin: 1.25rem 0 0.6rem 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.prog-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.prog-row { display: flex; align-items: center; gap: 0.7rem; font-size: 0.88rem; color: #374151; }
+.prog-title { color: #0f1117; }
+.consult-mini { display: flex; gap: 0.7rem; font-size: 0.85rem; color: #4b5563; }
+.consult-mini strong { color: #16a34a; white-space: nowrap; min-width: 84px; }
 </style>

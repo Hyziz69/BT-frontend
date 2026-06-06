@@ -44,13 +44,20 @@
           <RouterLink to="/challenges" class="see-all">View all →</RouterLink>
         </div>
         <div v-if="myApps.length" class="card-list">
-          <div v-for="app in myApps.slice(0, 4)" :key="app.id" class="row-card">
+          <component
+            :is="isActiveApp(app.status) ? 'RouterLink' : 'div'"
+            v-for="app in myApps.slice(0, 4)"
+            :key="app.id"
+            :to="isActiveApp(app.status) ? `/projects/${app.id}` : undefined"
+            class="row-card"
+            :class="{ link: isActiveApp(app.status) }"
+          >
             <div class="row-main">
               <strong>{{ app.challenge?.title ?? 'Challenge' }}</strong>
               <span class="muted">{{ app.challenge?.company?.name ?? '' }}</span>
             </div>
             <span class="pill" :class="appStatusClass(app.status)">{{ appStatusLabel(app.status) }}</span>
-          </div>
+          </component>
         </div>
         <RouterLink v-else to="/challenges" class="empty-cta">
           You haven't applied yet — browse open challenges →
@@ -153,8 +160,50 @@
 
       <!-- ============ MENTOR ============ -->
       <template v-else-if="isMentor">
-        <div class="empty-cta static">
-          Mentor workspace is coming soon — your mentees and consultations will appear here.
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-icon">🧑‍🏫</span>
+            <div class="stat-info">
+              <span class="stat-label">My Mentees</span>
+              <span class="stat-value">{{ myMentorships.length }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">◉</span>
+            <div class="stat-info">
+              <span class="stat-label">Active</span>
+              <span class="stat-value">{{ activeMentees }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">◎</span>
+            <div class="stat-info">
+              <span class="stat-label">Consultations</span>
+              <span class="stat-value">{{ totalConsultations }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-row">
+          <div class="section-title">My mentees</div>
+          <RouterLink to="/mentees" class="see-all">View all →</RouterLink>
+        </div>
+        <div v-if="myMentorships.length" class="card-list">
+          <RouterLink
+            v-for="m in myMentorships.slice(0, 5)"
+            :key="m.id"
+            :to="`/mentorships/${m.id}`"
+            class="row-card link"
+          >
+            <div class="row-main">
+              <strong>{{ m.application?.team?.name ?? 'Team' }}</strong>
+              <span class="muted">{{ menteeProject(m) }}</span>
+            </div>
+            <span class="pill" :class="m.ended_at ? 'grey' : 'green'">{{ m.ended_at ? 'Ended' : 'Active' }}</span>
+          </RouterLink>
+        </div>
+        <div v-else class="empty-cta static">
+          No mentees yet — they'll appear here once an admin assigns you to a project.
         </div>
       </template>
 
@@ -215,8 +264,9 @@ import { useAuthStore } from '../stores/auth'
 import { useTeamsStore } from '../stores/teams'
 import { adminApi, type AdminDashboardStats } from '../api/admin'
 import { challengeApplicationsApi, challengesApi } from '../api/challenges'
+import { mentorApi } from '../api/mentor'
 import AppLayout from '../components/AppLayout.vue'
-import type { Application, Challenge } from '../types'
+import type { Application, Challenge, Mentorship } from '../types'
 
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
@@ -226,6 +276,19 @@ const adminStats = ref<AdminDashboardStats | null>(null)
 const myApps = ref<Application[]>([])
 const openChallenges = ref<Challenge[]>([])
 const myChallenges = ref<Challenge[]>([])
+const myMentorships = ref<Mentorship[]>([])
+
+const activeMentees = computed(() => myMentorships.value.filter((m) => !m.ended_at).length)
+const totalConsultations = computed(() =>
+  myMentorships.value.reduce((s, m) => s + (m.consultations_count ?? 0), 0),
+)
+function menteeProject(m: Mentorship): string {
+  return (
+    m.application?.challenge?.title ??
+    m.application?.call?.program?.name ??
+    'Program A application'
+  )
+}
 
 const role = computed(() => authStore.user?.account_type ?? '')
 const isStudent = computed(() => role.value === 'student')
@@ -269,6 +332,7 @@ const APP_STATUS: Record<string, { label: string; cls: string }> = {
 }
 const appStatusLabel = (s: string) => APP_STATUS[s]?.label ?? s
 const appStatusClass = (s: string) => APP_STATUS[s]?.cls ?? 'grey'
+const isActiveApp = (s: string) => ['approved', 'active', 'completed'].includes(s)
 
 const CH_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'grey' },
@@ -298,6 +362,9 @@ onMounted(async () => {
     } else if (isCompany.value) {
       const chs = await challengesApi.list().catch(() => ({ challenges: [] }))
       myChallenges.value = chs.challenges
+    } else if (isMentor.value) {
+      const res = await mentorApi.mentorships().catch(() => ({ mentorships: [] }))
+      myMentorships.value = res.mentorships
     }
   } finally {
     loading.value = false

@@ -1,5 +1,5 @@
 import api from './axios'
-import type { Application, Challenge } from '../types'
+import type { Application, Challenge, StudentProject } from '../types'
 
 export interface PersonOption {
   id: string
@@ -67,6 +67,11 @@ export const challengeApplicationsApi = {
     return api.get('/program-b/applications').then((r) => r.data)
   },
 
+  // One application as a "project": challenge, team, milestones, mentor & feedback.
+  project(applicationId: string): Promise<{ application: StudentProject }> {
+    return api.get(`/program-b/applications/${applicationId}`).then((r) => r.data)
+  },
+
   // Student (team leader) applies their team to a challenge.
   apply(payload: ApplyPayload): Promise<{ message: string; application: Application }> {
     return api.post('/program-b/applications', payload).then((r) => r.data)
@@ -83,4 +88,31 @@ export const challengeApplicationsApi = {
       .post(`/program-b/applications/${applicationId}/assign-mentor`, { mentor_id: mentorId })
       .then((r) => r.data)
   },
+
+  // Project milestones (mentor / company / admin).
+  addMilestone(applicationId: string, payload: MilestonePayload): Promise<{ message: string }> {
+    return api.post(`/program-b/applications/${applicationId}/milestones`, payload).then((r) => r.data)
+  },
+
+  updateMilestone(
+    applicationId: string,
+    milestoneId: string,
+    payload: MilestonePayload,
+  ): Promise<{ message: string }> {
+    return api
+      .patch(`/program-b/applications/${applicationId}/milestones/${milestoneId}`, payload)
+      .then((r) => r.data)
+  },
+
+  // Company approves the final delivery → project closed.
+  approveDelivery(applicationId: string): Promise<{ message: string }> {
+    return api.post(`/program-b/applications/${applicationId}/approve-delivery`).then((r) => r.data)
+  },
+}
+
+export interface MilestonePayload {
+  title?: string
+  status?: string
+  due_date?: string | null
+  comment?: string | null
 }
