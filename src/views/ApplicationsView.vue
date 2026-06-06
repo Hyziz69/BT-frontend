@@ -6,21 +6,21 @@
         <div class="header-content">
           <div class="page-icon">◎</div>
           <div>
-            <h1 class="page-title">Applications</h1>
-            <p class="page-subtitle">Track your Program A applications</p>
+            <h1 class="page-title">{{ isCompanyContact ? 'Program A Applications' : 'Applications' }}</h1>
+            <p class="page-subtitle">{{ isCompanyContact ? 'Browse and accept student project applications.' : 'Track your Program A applications' }}</p>
           </div>
         </div>
-        <button @click="showCreateForm = true" class="btn-primary">+ New Application</button>
+        <button v-if="!isCompanyContact" @click="showCreateForm = true" class="btn-primary">+ New Application</button>
       </div>
 
       <p v-if="pageError" class="error">{{ pageError }}</p>
 
       <!-- Empty state -->
-      <div v-if="!loading && applications.length === 0" class="empty-state">
+     <div v-if="!loading && applications.length === 0" class="empty-state">
         <div class="empty-icon">◎</div>
-        <h3>No applications yet</h3>
-        <p>Create your first application to get started with Program A.</p>
-        <button @click="showCreateForm = true" class="btn-primary">Create Application</button>
+        <h3>{{ isCompanyContact ? 'No submitted applications yet.' : 'No applications yet' }}</h3>
+        <p>{{ isCompanyContact ? 'Check back later when students submit their projects.' : 'Create your first application to get started with Program A.' }}</p>
+        <button v-if="!isCompanyContact" @click="showCreateForm = true" class="btn-primary">Create Application</button>
       </div>
 
       <!-- Loading -->
@@ -114,6 +114,20 @@
         </div>
       </div>
     </div>
+
+    <div v-if="deleteAppTarget" class="modal-overlay" @click.self="deleteAppTarget = null">
+      <div class="modal modal-sm">
+        <div class="delete-icon">🗑</div>
+        <h2>Delete Application</h2>
+        <p>Are you sure you want to delete the draft application for <strong>{{ deleteAppTarget.team?.name }}</strong>?</p>
+        <div class="modal-actions">
+          <button @click="deleteAppTarget = null" class="btn-secondary">Cancel</button>
+          <button @click="confirmDeleteApp" :disabled="deletingApp" class="btn-danger">
+            {{ deletingApp ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -127,6 +141,7 @@ import AppLayout from '../components/AppLayout.vue'
 import type { Application } from '../types'
 import { callsApi } from '../api/calls'
 
+const isCompanyContact = computed(() => authStore.user?.account_type === 'company_contact')
 const hasTeams = computed(() => teamsStore.teams.length > 0)
 const router = useRouter()
 const authStore = useAuthStore()
@@ -139,6 +154,27 @@ const creating = ref(false)
 const appError = ref<string | null>(null)
 const pageError = ref<string | null>(null)
 const showCreateForm = ref(false)
+
+const deleteAppTarget = ref<Application | null>(null)
+const deletingApp = ref(false)
+
+function handleDeleteApp(app: Application) {
+  deleteAppTarget.value = app
+}
+
+async function confirmDeleteApp() {
+  if (!deleteAppTarget.value) return
+  deletingApp.value = true
+  try {
+    await applicationsApi.delete(deleteAppTarget.value.id)
+    applications.value = applications.value.filter(a => a.id !== deleteAppTarget.value!.id)
+    deleteAppTarget.value = null
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Failed to delete application')
+  } finally {
+    deletingApp.value = false
+  }
+}
 
 const newApp = ref({
   team_id: '',
@@ -236,6 +272,43 @@ async function handleCreate() {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
+
+.btn-icon-danger {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btn-icon-danger:hover { background: #fecaca; }
+
+.modal-sm {
+  max-width: 380px;
+  text-align: center;
+}
+.modal-sm h2 { margin-bottom: 0.75rem; }
+.modal-sm p { color: #6b7280; font-size: 0.875rem; margin-bottom: 0; }
+.delete-icon { font-size: 2rem; margin-bottom: 1rem; }
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .empty-icon {
   font-size: 2.5rem;

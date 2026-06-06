@@ -205,7 +205,6 @@
           Make sure all 6 required documents are uploaded before submitting.
         </p>
 
-        <!-- Missing documents warning -->
         <div v-if="submitError" class="submit-error">
           <div class="submit-error-icon">⚠</div>
           <div>
@@ -214,9 +213,14 @@
           </div>
         </div>
 
-        <button @click="handleSubmit" :disabled="submitting" class="btn-primary">
-          {{ submitting ? 'Submitting...' : 'Submit Application' }}
-        </button>
+        <div style="display: flex; gap: 0.75rem;">
+          <button @click="handleSubmit" :disabled="submitting" class="btn-primary">
+            {{ submitting ? 'Submitting...' : 'Submit Application' }}
+          </button>
+          <button v-if="application.status === 'draft'" @click="handleDeleteFromDetail" :disabled="deletingFromDetail" class="btn-danger">
+            {{ deletingFromDetail ? 'Deleting...' : 'Delete Draft' }}
+          </button>
+        </div>
       </div>
 
       <!-- Company Accept (company_contact only) -->
@@ -267,6 +271,21 @@ const submitting = ref(false)
 const deleteTarget = ref<Document | null>(null)
 const deleting = ref(false)
 const submitError = ref<string | null>(null)
+  const deletingFromDetail = ref(false)
+
+async function handleDeleteFromDetail() {
+  if (!application.value) return
+  if (!confirm('Delete this draft application?')) return
+  deletingFromDetail.value = true
+  try {
+    await applicationsApi.delete(application.value.id)
+    router.push('/applications')
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Failed to delete application')
+  } finally {
+    deletingFromDetail.value = false
+  }
+}
 
   async function handleCompanyAccept() {
   if (!application.value) return

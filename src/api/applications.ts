@@ -38,4 +38,8 @@ export const applicationsApi = {
       .patch(`/program-a/applications/${id}/transition`, { status, decision_notes })
       .then((r) => r.data)
   },
+
+  delete(id: string): Promise<void> {
+    return api.delete(`/program-a/applications/${id}`).then(r => r.data)
+  },
 }

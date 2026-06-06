@@ -12,12 +12,17 @@
           <span>Dashboard</span>
         </RouterLink>
 
-        <RouterLink to="/teams" class="nav-item">
+        <RouterLink v-if="isStudent" :to="teamLink" class="nav-item">
           <span class="nav-icon">◈</span>
-          <span>{{ isStudent ? 'My Team' : 'Teams' }}</span>
+          <span>My Team</span>
         </RouterLink>
 
-        <RouterLink to="/applications" class="nav-item">
+        <RouterLink v-if="isAdmin" to="/teams" class="nav-item">
+          <span class="nav-icon">◈</span>
+          <span>Teams</span>
+        </RouterLink>
+
+        <RouterLink v-if="isStudent" to="/applications" class="nav-item">
           <span class="nav-icon">◎</span>
           <span>Applications</span>
         </RouterLink>
@@ -32,9 +37,19 @@
           <span>Company</span>
         </RouterLink>
 
+        <RouterLink v-if="isCompany" to="/applications" class="nav-item">
+          <span class="nav-icon">◎</span>
+          <span>Applications</span>
+        </RouterLink>
+
         <RouterLink v-if="isMentor" to="/mentees" class="nav-item">
-          <span class="nav-icon">🧑‍🏫</span>
+          <span class="nav-icon">◉</span>
           <span>Mentees</span>
+        </RouterLink>
+
+        <RouterLink v-if="isAdmin" to="/applications" class="nav-item">
+          <span class="nav-icon">◎</span>
+          <span>Applications</span>
         </RouterLink>
 
         <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
@@ -106,6 +121,23 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import NotificationBell from './NotificationBell.vue'
+import { useTeamsStore } from '../stores/teams'
+import { onMounted } from 'vue'
+
+const teamsStore = useTeamsStore()
+
+const teamLink = computed(() => {
+  if (teamsStore.teams.length > 0 && teamsStore.teams[0]) {
+    return `/teams/${teamsStore.teams[0].id}`
+  }
+  return '/teams'
+})
+
+onMounted(() => {
+  if (isStudent.value) {
+    teamsStore.fetchTeams()
+  }
+})
 
 const router = useRouter()
 const route = useRoute()

@@ -175,6 +175,25 @@
             </div>
           </div>
         </div>
+
+        <!-- Accepted Program A Projects -->
+        <div class="section" v-if="isManager">
+          <div class="section-header">
+            <h2>Accepted Program A Projects</h2>
+          </div>
+          <div v-if="acceptedApps.length === 0" class="empty">No accepted projects yet.</div>
+          <div v-else class="challenge-list">
+            <div v-for="app in acceptedApps" :key="app.id" class="challenge-card" @click="router.push(`/applications/${app.id}`)">
+              <div class="challenge-row">
+                <div class="challenge-main">
+                  <strong>{{ app.team?.name ?? 'Unknown team' }}</strong>
+                  <span class="status-badge" :class="app.status">{{ app.status }}</span>
+                </div>
+                <span class="view-link">View →</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Create challenge modal -->
@@ -260,6 +279,20 @@ import { challengesApi, challengeApplicationsApi } from '../api/challenges'
 import { programsApi, type ProgramOption, type CallOption } from '../api/programs'
 import type { Application, Challenge, Company, CompanyInvitation, CompanyMember, CompanyRole } from '../types'
 import AppLayout from '../components/AppLayout.vue'
+import { applicationsApi } from '../api/applications'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const acceptedApps = ref<any[]>([])
+
+async function loadAcceptedApps() {
+  try {
+    const res = await applicationsApi.getAll('approved')
+    acceptedApps.value = res.data
+  } catch {
+    acceptedApps.value = []
+  }
+}
 
 const authStore = useAuthStore()
 
@@ -326,6 +359,7 @@ async function load() {
     company.value = res.company
     await loadMembers(companyId)
     await loadChallenges()
+    await loadAcceptedApps()
   } catch {
     company.value = null
   } finally {
