@@ -272,7 +272,7 @@ async function loadEvents(page = 1) {
       entity_type: filters.entity_type || undefined,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined,
-      sort: filters.sort,
+      sort: filters.sort as 'newest' | 'oldest',
       per_page: filters.per_page,
       page,
     })
