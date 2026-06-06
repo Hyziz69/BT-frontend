@@ -75,6 +75,8 @@
     <main class="main-content">
       <slot />
     </main>
+
+    <NotificationBell />
   </div>
 </template>
 
@@ -82,6 +84,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import NotificationBell from './NotificationBell.vue'
 
 const router = useRouter()
 const route = useRoute()
