@@ -12,24 +12,54 @@
           <span>Dashboard</span>
         </RouterLink>
 
-        <RouterLink to="/teams" class="nav-item">
+        <RouterLink v-if="isStudent" :to="teamLink" class="nav-item">
           <span class="nav-icon">◈</span>
-          <span>{{ isStudent ? 'My Team' : 'Teams' }}</span>
+          <span>My Team</span>
         </RouterLink>
 
-        <RouterLink to="/applications" class="nav-item">
+        <RouterLink v-if="isAdmin" to="/teams" class="nav-item">
+          <span class="nav-icon">◈</span>
+          <span>Teams</span>
+        </RouterLink>
+
+        <RouterLink v-if="isStudent" to="/applications" class="nav-item">
           <span class="nav-icon">◎</span>
           <span>Applications</span>
         </RouterLink>
 
-        <RouterLink to="/applications-b" class="nav-item">
-          <span class="nav-icon">★</span>
-          <span>Program B Applications</span>
+        <RouterLink v-if="isStudent" to="/challenges" class="nav-item">
+          <span class="nav-icon">◆</span>
+          <span>Challenges</span>
+        </RouterLink>
+
+        <RouterLink v-if="isCompany" to="/company" class="nav-item">
+          <span class="nav-icon">⌂</span>
+          <span>Company</span>
+        </RouterLink>
+
+        <RouterLink v-if="isCompany" to="/applications" class="nav-item">
+          <span class="nav-icon">◎</span>
+          <span>Applications</span>
+        </RouterLink>
+
+        <RouterLink v-if="isMentor" to="/mentees" class="nav-item">
+          <span class="nav-icon">◉</span>
+          <span>Mentees</span>
+        </RouterLink>
+
+        <RouterLink v-if="isAdmin" to="/applications" class="nav-item">
+          <span class="nav-icon">◎</span>
+          <span>Applications</span>
         </RouterLink>
 
         <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
           <span class="nav-icon">★</span>
           <span>Admin</span>
+        </RouterLink>
+
+        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
+          <span class="nav-icon">◷</span>
+          <span>Activity Log</span>
         </RouterLink>
       </nav>
 
@@ -58,13 +88,31 @@
           </div>
         </button>
 
-        <button @click="handleLogout" class="logout-btn" title="Logout">⏻</button>
+        <button @click="handleLogout" class="logout-btn" title="Logout" aria-label="Logout">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
       </div>
     </aside>
 
     <main class="main-content">
       <slot />
     </main>
+
+    <NotificationBell />
   </div>
 </template>
 
@@ -72,6 +120,24 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import NotificationBell from './NotificationBell.vue'
+import { useTeamsStore } from '../stores/teams'
+import { onMounted } from 'vue'
+
+const teamsStore = useTeamsStore()
+
+const teamLink = computed(() => {
+  if (teamsStore.teams.length > 0 && teamsStore.teams[0]) {
+    return `/teams/${teamsStore.teams[0].id}`
+  }
+  return '/teams'
+})
+
+onMounted(() => {
+  if (isStudent.value) {
+    teamsStore.fetchTeams()
+  }
+})
 
 const router = useRouter()
 const route = useRoute()
@@ -80,6 +146,10 @@ const authStore = useAuthStore()
 const user = computed(() => authStore.user as any)
 
 const isStudent = computed(() => user.value?.account_type === 'student')
+
+const isCompany = computed(() => user.value?.account_type === 'company_contact')
+
+const isMentor = computed(() => user.value?.account_type === 'mentor')
 
 const isAdmin = computed(() =>
   ['nti_admin', 'superadmin'].includes(user.value?.account_type ?? ''),
@@ -301,11 +371,13 @@ html, body {
   border: none;
   color: #8892a4;
   cursor: pointer;
-  font-size: 1.1rem;
   padding: 0.4rem;
   border-radius: 6px;
   transition: all 0.15s ease;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logout-btn:hover {
