@@ -33,6 +33,8 @@ const router = createRouter({
     { path: '/admin', name: 'admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } },
     { path: '/admin/activity', name: 'admin-activity', component: () => import('../views/AdminActivityView.vue'), meta: { requiresAuth: true } },
     { path: '/admin/reports', name: 'admin-reports', component: () => import('../views/AdminReportsView.vue'), meta: { requiresAuth: true } },
+    { path: '/applications-b', name: 'applications-b', component: () => import('../views/program-b/ApplicationsView.vue'), meta: { requiresAuth: true } },
+    { path: '/applications-b/:id', name: 'application-b-detail', component: () => import('../views/program-b/ApplicationDetailView.vue'), meta: { requiresAuth: true } },
   ],
 })
 

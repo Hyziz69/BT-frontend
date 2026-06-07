@@ -1,44 +1,40 @@
 <template>
   <AppLayout>
     <div class="applications">
-      <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <div class="page-icon">◎</div>
+          <div class="page-icon">🚀</div>
           <div>
-            <h1 class="page-title">{{ isCompanyContact ? 'Program A Applications' : 'Applications' }}</h1>
-            <p class="page-subtitle">{{ isCompanyContact ? 'Browse and accept student project applications.' : 'Track your Program A applications' }}</p>
+            <h1 class="page-title">Program B Applications</h1>
+            <p class="page-subtitle">Track your startup applications and pitch decks</p>
           </div>
         </div>
-        <button v-if="!isCompanyContact" @click="showCreateForm = true" class="btn-primary">+ New Application</button>
+        <button @click="showCreateForm = true" class="btn-primary">+ New Program B App</button>
       </div>
 
       <p v-if="pageError" class="error">{{ pageError }}</p>
 
-      <!-- Empty state -->
-     <div v-if="!loading && applications.length === 0" class="empty-state">
-        <div class="empty-icon">◎</div>
-        <h3>{{ isCompanyContact ? 'No submitted applications yet.' : 'No applications yet' }}</h3>
-        <p>{{ isCompanyContact ? 'Check back later when students submit their projects.' : 'Create your first application to get started with Program A.' }}</p>
-        <button v-if="!isCompanyContact" @click="showCreateForm = true" class="btn-primary">Create Application</button>
+      <div v-if="!loading && applications.length === 0" class="empty-state">
+        <div class="empty-icon">🚀</div>
+        <h3>No Program B applications yet</h3>
+        <p>Select an open call and create your first application.</p>
+        <button @click="showCreateForm = true" class="btn-primary">Create Application</button>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="loading">Loading applications...</div>
+      <div v-if="loading" class="loading">Loading Program B applications...</div>
 
-      <!-- Applications list -->
       <div v-else class="applications-list">
         <div
           v-for="app in applications"
           :key="app.id"
           class="app-card"
-          @click="router.push(`/applications/${app.id}`)"
+          @click="router.push(`/applications-b/${app.id}`)"
         >
           <div class="app-left">
-            <div class="app-icon-sm">◎</div>
+            <div class="app-icon-sm">🚀</div>
             <div class="app-info">
               <h3>{{ app.team?.name ?? 'Unknown Team' }}</h3>
-              <p>{{ app.call?.program?.name ?? 'Program A' }}</p>
+              <p>{{ app.call?.title ?? 'Unknown Call' }}</p>
             </div>
           </div>
           <div class="app-right">
@@ -52,79 +48,43 @@
         </div>
       </div>
 
-      <!-- Create Application Modal -->
       <div v-if="showCreateForm" class="modal-overlay" @click.self="showCreateForm = false">
         <div class="modal">
-          <h2>New Application</h2>
+          <h2>Apply for Program B</h2>
 
-          <!-- No team warning -->
-          <div v-if="!hasTeams" class="no-team-warning">
-            <div class="warning-icon">⚠</div>
-            <h3>You don't have a team yet</h3>
-            <p>You need to be part of a team before applying to Program A.</p>
-            <div class="modal-actions">
-              <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
-              <RouterLink to="/teams" class="btn-primary" @click="showCreateForm = false">
-                Go to Teams
-              </RouterLink>
-            </div>
+          <div class="field">
+            <label>Select Call</label>
+            <select v-model="newApp.call_id">
+              <option value="">-- Select a call --</option>
+              <option v-for="call in programBCalls" :key="call.id" :value="call.id">
+                {{ call.title }} (closes: {{ new Date(call.closes_at).toLocaleDateString('sk-SK') }})
+              </option>
+            </select>
           </div>
 
-          <!-- Application form -->
-          <template v-else>
-            <div class="field">
-              <label>Select Team</label>
-              <select v-model="newApp.team_id">
-                <option value="">-- Select a team --</option>
-                <option v-for="team in teamsStore.teams" :key="team.id" :value="team.id">
-                  {{ team.name }}
-                </option>
-              </select>
-            </div>
+          <div class="field">
+            <label>Select Company Challenge</label>
+            <select v-model="newApp.challenge_id">
+              <option value="">-- Select a challenge --</option>
+              <option v-for="challenge in programBChallenges" :key="challenge.id" :value="challenge.id">
+                {{ challenge.title }}
+              </option>
+            </select>
+          </div>
 
-            <div class="field">
-              <label>Select Call</label>
-              <select v-model="newApp.call_id">
-                <option value="">-- Select a call --</option>
-                <option v-for="call in calls" :key="call.id" :value="call.id">
-                  {{ call.title }} ({{ new Date(call.closes_at).toLocaleDateString('sk-SK') }})
-                </option>
-              </select>
-            </div>
+          <div class="field">
+            <label>Elevator Pitch (Motivation Letter)</label>
+            <textarea v-model="newApp.motivation_letter" rows="3" placeholder="Briefly describe your startup idea..." />
+          </div>
 
-            <div class="field">
-              <label>Motivation Letter</label>
-              <textarea v-model="newApp.motivation_letter" rows="4" placeholder="Why do you want to join this program?" />
-            </div>
+          <p v-if="appError" class="error">{{ appError }}</p>
 
-            <div class="field">
-              <label>Solution Proposal</label>
-              <textarea v-model="newApp.solution_proposal" rows="4" placeholder="Describe your proposed solution..." />
-            </div>
-
-            <p v-if="appError" class="error">{{ appError }}</p>
-
-            <div class="modal-actions">
-              <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
-              <button @click="handleCreate" :disabled="creating" class="btn-primary">
-                {{ creating ? 'Creating...' : 'Create Draft' }}
-              </button>
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="deleteAppTarget" class="modal-overlay" @click.self="deleteAppTarget = null">
-      <div class="modal modal-sm">
-        <div class="delete-icon">🗑</div>
-        <h2>Delete Application</h2>
-        <p>Are you sure you want to delete the draft application for <strong>{{ deleteAppTarget.team?.name }}</strong>?</p>
-        <div class="modal-actions">
-          <button @click="deleteAppTarget = null" class="btn-secondary">Cancel</button>
-          <button @click="confirmDeleteApp" :disabled="deletingApp" class="btn-danger">
-            {{ deletingApp ? 'Deleting...' : 'Delete' }}
-          </button>
+          <div class="modal-actions">
+            <button @click="showCreateForm = false" class="btn-secondary">Cancel</button>
+            <button @click="handleCreate" :disabled="creating || !newApp.call_id || !newApp.challenge_id" class="btn-primary">
+              {{ creating ? 'Creating...' : 'Create Application' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -132,53 +92,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import { useTeamsStore } from '../stores/teams'
-import { applicationsApi } from '../api/applications'
-import AppLayout from '../components/AppLayout.vue'
-import type { Application } from '../types'
-import { callsApi } from '../api/calls'
+import { useAuthStore } from '@/stores/auth.ts'
+import { applicationsBApi } from '@/api/program-b/applications.ts'
+import { callsApi } from '@/api/program-b/calls.ts'
+import api from '../../api/axios.ts'
+import AppLayout from '../../components/AppLayout.vue'
+import type { Application } from '@/types'
 
-const isCompanyContact = computed(() => authStore.user?.account_type === 'company_contact')
-const hasTeams = computed(() => teamsStore.teams.length > 0)
 const router = useRouter()
 const authStore = useAuthStore()
-const teamsStore = useTeamsStore()
-const calls = ref<any[]>([])
 
 const applications = ref<Application[]>([])
+const programBCalls = ref<any[]>([])
+const programBChallenges = ref<any[]>([])
 const loading = ref(false)
 const creating = ref(false)
 const appError = ref<string | null>(null)
 const pageError = ref<string | null>(null)
 const showCreateForm = ref(false)
 
-const deleteAppTarget = ref<Application | null>(null)
-const deletingApp = ref(false)
-
-function handleDeleteApp(app: Application) {
-  deleteAppTarget.value = app
-}
-
-async function confirmDeleteApp() {
-  if (!deleteAppTarget.value) return
-  deletingApp.value = true
-  try {
-    await applicationsApi.delete(deleteAppTarget.value.id)
-    applications.value = applications.value.filter(a => a.id !== deleteAppTarget.value!.id)
-    deleteAppTarget.value = null
-  } catch (e: any) {
-    alert(e.response?.data?.message ?? 'Failed to delete application')
-  } finally {
-    deletingApp.value = false
-  }
-}
-
 const newApp = ref({
-  team_id: '',
   call_id: '',
+  challenge_id: '', // ДОБАВЛЕНО
   motivation_letter: '',
   solution_proposal: '',
 })
@@ -187,19 +124,19 @@ onMounted(async () => {
   loading.value = true
   pageError.value = null
   try {
-    const response = await applicationsApi.getAll()
-    applications.value = response.data
+    const appResponse = await applicationsBApi.getAll()
+    applications.value = appResponse.data
+
+    const callsResponse = await callsApi.getAll()
+    programBCalls.value = callsResponse.data
+
+    const challengesResponse = await api.get('/program-b/challenges')
+    programBChallenges.value = challengesResponse.data.challenges
+
   } catch (e: any) {
-    pageError.value = e.response?.data?.message ?? 'Failed to load applications'
+    pageError.value = e.response?.data?.message ?? 'Failed to load data'
   } finally {
     loading.value = false
-  }
-  teamsStore.fetchTeams()
-  try {
-    const res = await callsApi.getAll()
-    calls.value = res.data
-  } catch {
-    calls.value = []
   }
 })
 
@@ -207,11 +144,8 @@ async function handleCreate() {
   appError.value = null
   creating.value = true
   try {
-    const response = await applicationsApi.create(newApp.value)
-    applications.value.push(response.data)
-    showCreateForm.value = false
-    newApp.value = { team_id: '', call_id: '', motivation_letter: '', solution_proposal: '' }
-    router.push(`/applications/${response.data.id}`)
+    const response = await applicationsBApi.create(newApp.value)
+    router.push(`/applications/${response.data.application.id}`)
   } catch (e: any) {
     appError.value = e.response?.data?.message ?? 'Failed to create application'
   } finally {
@@ -272,43 +206,6 @@ async function handleCreate() {
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-
-.btn-icon-danger {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: none;
-  background: #fee2e2;
-  color: #991b1b;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  transition: background 0.15s;
-  flex-shrink: 0;
-}
-.btn-icon-danger:hover { background: #fecaca; }
-
-.modal-sm {
-  max-width: 380px;
-  text-align: center;
-}
-.modal-sm h2 { margin-bottom: 0.75rem; }
-.modal-sm p { color: #6b7280; font-size: 0.875rem; margin-bottom: 0; }
-.delete-icon { font-size: 2rem; margin-bottom: 1rem; }
-
-.btn-danger {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-.btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .empty-icon {
   font-size: 2.5rem;

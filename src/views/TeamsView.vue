@@ -1,16 +1,15 @@
 <template>
   <AppLayout>
     <div class="teams">
-      <!-- Header -->
       <div class="page-header">
         <div class="header-content">
-          <h1 class="page-title">{{ isAdmin ? 'All Teams' : 'My Team' }}</h1>
-          <p class="page-subtitle">{{ isAdmin ? 'Overview of all teams in the system.' : 'Manage your team and collaborate with others.' }}</p>
+          <h1 class="page-title">{{ isAdmin ? 'All Teams' : 'My Teams' }}</h1>
+          <p class="page-subtitle">{{ isAdmin ? 'Overview of all teams in the system.' : 'Manage your teams and collaborate with others.' }}</p>
         </div>
-        <button v-if="!isAdmin" @click="showCreateForm = true" class="btn-primary">+ Create Team</button>
+        <div class="header-actions" v-if="!isAdmin">
+        </div>
       </div>
 
-      <!-- Create Team Modal -->
       <div v-if="showCreateForm" class="modal-overlay" @click.self="showCreateForm = false">
         <div class="modal">
           <h2>Create New Team</h2>
@@ -32,19 +31,35 @@
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="teamsStore.loading && !showCreateForm" class="loading">Loading teams...</div>
-
-      <!-- Empty (student only) -->
-      <div v-else-if="!isAdmin && !teamsStore.loading && teamsStore.teams.length === 0" class="empty">
-        <div class="empty-icon">◈</div>
-        <p>You don't have a team yet.</p>
-        <button @click="showCreateForm = true" class="btn-primary">Create your first team</button>
+      <div v-if="showJoinForm" class="modal-overlay" @click.self="showJoinForm = false">
+        <div class="modal">
+          <h2>Join The Team</h2>
+          <div class="field">
+            <label>Invite Code</label>
+            <input v-model="inviteCodeInput" type="text" placeholder="Enter the invite code" />
+          </div>
+          <p v-if="teamsStore.error" class="error">{{ teamsStore.error }}</p>
+          <div class="modal-actions">
+            <button @click="showJoinForm = false" class="btn-secondary">Cancel</button>
+            <button @click="handleJoin" :disabled="teamsStore.loading" class="btn-primary">
+              {{ teamsStore.loading ? 'Joining...' : 'Join a Team' }}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <!-- Admin: grouped by program -->
+      <div v-if="teamsStore.loading && !showCreateForm && !showJoinForm" class="loading">Loading teams...</div>
+
+      <div v-else-if="!isAdmin && !teamsStore.loading && teamsStore.teams.length === 0" class="empty">
+        <div class="empty-icon">◈</div>
+        <p>You don't have any teams yet.</p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <button @click="showJoinForm = true" class="btn-secondary">Pripojiť sa</button>
+          <button @click="showCreateForm = true" class="btn-primary">Create your first team</button>
+        </div>
+      </div>
+
       <div v-if="isAdmin">
-        <!-- Program A Teams -->
         <div class="group-header">
           <div class="group-badge program-a">Program A</div>
           <span class="group-count">{{ programATeams.length }} teams</span>
@@ -62,10 +77,10 @@
               <span class="member-count">{{ team.member_count }} member{{ team.member_count !== 1 ? 's' : '' }}</span>
             </div>
             <h2>{{ team.name }}</h2>
-            <p class="leader">{{ team.leader.name }}</p>
+            <p class="leader">{{ team.leader?.name || 'Unknown Leader' }}</p>
             <div class="competencies">
               <span v-for="c in team.competencies" :key="c" class="tag">{{ c }}</span>
-              <span v-if="team.competencies.length === 0" class="tag-empty">No competencies</span>
+              <span v-if="!team.competencies || team.competencies.length === 0" class="tag-empty">No competencies</span>
             </div>
             <div class="card-footer">
               <span class="view-link">View team →</span>
@@ -73,7 +88,6 @@
           </div>
         </div>
 
-        <!-- Program B Teams -->
         <div class="group-header" style="margin-top: 2rem;">
           <div class="group-badge program-b">Program B</div>
           <span class="group-count">{{ programBTeams.length }} teams</span>
@@ -91,10 +105,10 @@
               <span class="member-count">{{ team.member_count }} member{{ team.member_count !== 1 ? 's' : '' }}</span>
             </div>
             <h2>{{ team.name }}</h2>
-            <p class="leader">{{ team.leader.name }}</p>
+            <p class="leader">{{ team.leader?.name || 'Unknown Leader' }}</p>
             <div class="competencies">
               <span v-for="c in team.competencies" :key="c" class="tag">{{ c }}</span>
-              <span v-if="team.competencies.length === 0" class="tag-empty">No competencies</span>
+              <span v-if="!team.competencies || team.competencies.length === 0" class="tag-empty">No competencies</span>
             </div>
             <div class="card-footer">
               <span class="view-link">View team →</span>
@@ -103,7 +117,6 @@
         </div>
       </div>
 
-      <!-- Student: own teams -->
       <div v-else class="teams-grid">
         <div
           v-for="team in teamsStore.teams"
@@ -116,10 +129,10 @@
             <span class="member-count">{{ team.member_count }} member{{ team.member_count !== 1 ? 's' : '' }}</span>
           </div>
           <h2>{{ team.name }}</h2>
-          <p class="leader">{{ team.leader.name }}</p>
+          <p class="leader">{{ team.leader?.name || 'Unknown Leader' }}</p>
           <div class="competencies">
             <span v-for="c in team.competencies" :key="c" class="tag">{{ c }}</span>
-            <span v-if="team.competencies.length === 0" class="tag-empty">No competencies</span>
+            <span v-if="!team.competencies || team.competencies.length === 0" class="tag-empty">No competencies</span>
           </div>
           <div class="card-footer">
             <span class="view-link">View team →</span>
@@ -144,7 +157,9 @@ const authStore = useAuthStore()
 
 const isAdmin = computed(() => authStore.isAdmin)
 const showCreateForm = ref(false)
+const showJoinForm = ref(false)
 const competenciesInput = ref('')
+const inviteCodeInput = ref('')
 const newTeam = ref({ name: '' })
 const allTeams = ref<any[]>([])
 
@@ -162,7 +177,6 @@ onMounted(async () => {
       const res = await api.get('/admin/teams')
       allTeams.value = res.data.data ?? res.data
     } catch {
-      // fallback to regular teams if admin endpoint doesn't exist yet
       await teamsStore.fetchTeams()
       allTeams.value = teamsStore.teams
     }
@@ -183,6 +197,14 @@ async function handleCreate() {
     showCreateForm.value = false
     newTeam.value.name = ''
     competenciesInput.value = ''
+  }
+}
+
+async function handleJoin() {
+  await teamsStore.joinTeam(inviteCodeInput.value.toUpperCase())
+  if (!teamsStore.error) {
+    showJoinForm.value = false
+    inviteCodeInput.value = ''
   }
 }
 </script>
@@ -212,6 +234,8 @@ async function handleCreate() {
 }
 
 .page-subtitle { color: #8892a4; font-size: 0.95rem; }
+
+.header-actions { display: flex; gap: 0.75rem; }
 
 .group-header {
   display: flex;

@@ -117,6 +117,70 @@
             </div>
           </div>
         </div>
+
+        <!-- Evaluations -->
+        <div class="section" v-if="authStore.isAdmin || authStore.isEvaluator">
+          <div class="section-header">
+            <h2>Evaluations</h2>
+            <button v-if="!myEvaluation" @click="showEvalForm = true" class="btn-primary">
+              + Add Evaluation
+            </button>
+          </div>
+
+          <div v-if="evaluations.length === 0" class="empty-section">No evaluations yet.</div>
+
+          <div class="evaluations-list">
+            <div v-for="ev in evaluations" :key="ev.id" class="evaluation-card">
+              <div class="eval-header">
+                <div class="eval-info">
+                  <strong>{{ ev.evaluator?.first_name }} {{ ev.evaluator?.last_name }}</strong>
+                  <span class="eval-criterion" v-if="ev.criterion">{{ ev.criterion }}</span>
+                </div>
+                <div class="eval-right">
+                  <span class="eval-score" :class="scoreClass(ev.score)">{{ ev.score }}/100</span>
+                  <button
+                    v-if="authStore.isAdmin || ev.evaluator?.id === authStore.user?.id"
+                    @click="handleDeleteEvaluation(ev)"
+                    class="btn-icon danger"
+                    title="Delete"
+                  >✕</button>
+                </div>
+              </div>
+              <p v-if="ev.comment" class="eval-comment">{{ ev.comment }}</p>
+            </div>
+          </div>
+
+          <!-- Average score -->
+          <div v-if="evaluations.length > 0" class="eval-average">
+            Average Score: <strong>{{ averageScore }}</strong>/100
+          </div>
+        </div>
+
+        <!-- Add Evaluation Modal -->
+        <div v-if="showEvalForm" class="modal-overlay" @click.self="showEvalForm = false">
+          <div class="modal">
+            <h2>Add Evaluation</h2>
+            <div class="field">
+              <label>Score (0-100)</label>
+              <input v-model.number="newEval.score" type="number" min="0" max="100" placeholder="85" />
+            </div>
+            <div class="field">
+              <label>Criterion <span style="color:#9ca3af;font-weight:400">(optional)</span></label>
+              <input v-model="newEval.criterion" type="text" placeholder="e.g. Innovation, Feasibility" />
+            </div>
+            <div class="field">
+              <label>Comment <span style="color:#9ca3af;font-weight:400">(optional)</span></label>
+              <textarea v-model="newEval.comment" rows="3" placeholder="Your evaluation notes..." />
+            </div>
+            <p v-if="evalError" class="error">{{ evalError }}</p>
+            <div class="modal-actions">
+              <button @click="showEvalForm = false" class="btn-secondary">Cancel</button>
+              <button @click="handleAddEvaluation" :disabled="addingEval" class="btn-primary">
+                {{ addingEval ? 'Submitting...' : 'Submit Evaluation' }}
+              </button>
+            </div>
+          </div>
+        </div>
         <!-- Milestones -->
         <div class="section">
           <div class="section-header">
@@ -265,6 +329,55 @@ import type { Application, Document, Milestone } from '../types'
 import { milestonesApi } from '../api/milestones'
 import { useTeamsStore } from '../stores/teams'
 import api from '../api/axios'
+import { evaluationsApi } from '../api/evaluations'
+
+const evaluations = ref<any[]>([])
+const showEvalForm = ref(false)
+const addingEval = ref(false)
+const evalError = ref<string | null>(null)
+const newEval = ref({ score: 0, criterion: '', comment: '' })
+
+const myEvaluation = computed(() =>
+  evaluations.value.find(e => e.evaluator?.id === authStore.user?.id)
+)
+
+const averageScore = computed(() => {
+  if (evaluations.value.length === 0) return 0
+  const sum = evaluations.value.reduce((acc, e) => acc + Number(e.score), 0)
+  return (sum / evaluations.value.length).toFixed(1)
+})
+
+function scoreClass(score: number) {
+  if (score >= 75) return 'score-high'
+  if (score >= 50) return 'score-mid'
+  return 'score-low'
+}
+
+async function handleAddEvaluation() {
+  if (!application.value) return
+  addingEval.value = true
+  evalError.value = null
+  try {
+    const response = await evaluationsApi.create(application.value.id, newEval.value)
+    evaluations.value.push(response.data)
+    showEvalForm.value = false
+    newEval.value = { score: 0, criterion: '', comment: '' }
+  } catch (e: any) {
+    evalError.value = e.response?.data?.message ?? 'Failed to submit evaluation'
+  } finally {
+    addingEval.value = false
+  }
+}
+
+async function handleDeleteEvaluation(ev: any) {
+  if (!application.value) return
+  try {
+    await evaluationsApi.delete(application.value.id, ev.id)
+    evaluations.value = evaluations.value.filter(e => e.id !== ev.id)
+  } catch {
+    alert('Failed to delete evaluation')
+  }
+}
 
 const teamsStore = useTeamsStore()
 const submitting = ref(false)
@@ -461,12 +574,14 @@ onMounted(async () => {
   loadError.value = null
   try {
     const id = route.params.id as string
-    const [appResponse, docsResponse] = await Promise.all([
+    const [appResponse, docsResponse, evalsResponse] = await Promise.all([
       applicationsApi.getOne(id),
       documentsApi.getAll(id),
+      evaluationsApi.getAll(id),
     ])
     application.value = appResponse.data
     documents.value = docsResponse.data
+    evaluations.value = evalsResponse.data
     milestones.value = application.value.milestones ?? []
   } catch (e: any) {
     loadError.value =
@@ -500,6 +615,74 @@ async function handleTransition() {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+.evaluations-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.evaluation-card {
+  padding: 1rem;
+  border: 1px solid #f3f4f6;
+  border-radius: 10px;
+}
+
+.eval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.eval-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.eval-info strong { font-size: 0.875rem; color: #0f1117; }
+
+.eval-criterion {
+  font-size: 0.775rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.eval-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eval-score {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+}
+
+.score-high { background: #d1fae5; color: #065f46; }
+.score-mid { background: #fef3c7; color: #92400e; }
+.score-low { background: #fee2e2; color: #991b1b; }
+
+.eval-comment {
+  font-size: 0.825rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.eval-average {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: right;
+}
+
+.eval-average strong {
+  color: #0f1117;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
 
 .app-detail { max-width: 900px; }
 

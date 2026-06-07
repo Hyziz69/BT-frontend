@@ -1,20 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { teamsApi } from '../api/teams'
-import type { Team } from '../types'
+import { teamsApi } from '../api/program-b/teams.ts'
+import type { Team } from '@/types'
 
 export const useTeamsStore = defineStore('teams', () => {
   const teams = ref<Team[]>([])
   const currentTeam = ref<Team | null>(null)
+
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const inviteError = ref<string | null>(null) // Специально для ошибок ввода инвайт-кода
 
   async function fetchTeams() {
     loading.value = true
     error.value = null
     try {
-      const response = await teamsApi.getAll()
-      teams.value = response.data
+      const response = await teamsApi.getAll() as any
+      teams.value = response.data ? response.data : response
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load teams'
     } finally {
@@ -26,10 +28,18 @@ export const useTeamsStore = defineStore('teams', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await teamsApi.getOne(id)
-      currentTeam.value = response.data
+      const response = await teamsApi.getOne(id) as any
+
+      // Берем команду по ключу 'team', как возвращает TeamController.php
+      if (response.data) {
+        currentTeam.value = response.data
+      } else {
+        currentTeam.value = response.data ?? response
+      }
+
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load team'
+      currentTeam.value = null
     } finally {
       loading.value = false
     }
@@ -39,9 +49,11 @@ export const useTeamsStore = defineStore('teams', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await teamsApi.create({ name, competencies })
-      teams.value.push(response.data)
-      return response.data
+      const response = await teamsApi.create({ name, competencies }) as any
+
+      await fetchTeams()
+
+      return response
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to create team'
       throw e
@@ -50,14 +62,18 @@ export const useTeamsStore = defineStore('teams', () => {
     }
   }
 
-  async function addMember(teamId: string, email: string) {
+  async function joinTeam(inviteCode: string) {
     loading.value = true
-    error.value = null
+    inviteError.value = null
     try {
-      const response = await teamsApi.addMember(teamId, email)
-      currentTeam.value = response.data
+      // Убедись, что метод join есть в твоем файле api/teams.ts
+      const response = await teamsApi.join(inviteCode) as any
+
+      await fetchTeams()
+
+      return response
     } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to add member'
+      inviteError.value = e.response?.data?.message ?? 'Neplatný pozývací kód alebo ste už v tíme.'
       throw e
     } finally {
       loading.value = false
@@ -79,16 +95,32 @@ export const useTeamsStore = defineStore('teams', () => {
       loading.value = false
     }
   }
+  async function leaveTeam(teamId: string) {
+    loading.value = true
+    error.value = null
+    try {
+      await teamsApi.leave(teamId)
+      currentTeam.value = null // Очищаем состояние текущей команды
+      await fetchTeams()       // Обновляем список команд на главной странице
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Chyba pri opúšťaní tímu.'
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
 
   return {
     teams,
     currentTeam,
     loading,
     error,
+    inviteError,
     fetchTeams,
     fetchTeam,
     createTeam,
-    addMember,
+    joinTeam,
     removeMember,
+    leaveTeam
   }
 })

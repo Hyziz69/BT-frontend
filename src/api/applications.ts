@@ -1,5 +1,5 @@
 import api from './axios'
-import type { ApiResponse, Application } from '../types'
+import type { ApiResponse, Application } from '@/types'
 
 export const applicationsApi = {
   getAll(status?: string): Promise<{ data: Application[] }> {

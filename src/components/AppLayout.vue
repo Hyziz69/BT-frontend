@@ -32,6 +32,16 @@
           <span>Challenges</span>
         </RouterLink>
 
+        <RouterLink v-if="isStudent" to="/applications-b" class="nav-item">
+          <span class="nav-icon">★</span>
+          <span>Program B</span>
+        </RouterLink>
+
+        <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
+          <span class="nav-icon">★</span>
+          <span>Admin</span>
+        </RouterLink>
+
         <RouterLink v-if="isCompany" to="/company" class="nav-item">
           <span class="nav-icon">⌂</span>
           <span>Company</span>
