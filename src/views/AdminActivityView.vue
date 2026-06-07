@@ -23,6 +23,11 @@
           <span>◷</span>
           Activity Log
         </RouterLink>
+
+        <RouterLink to="/admin/reports" class="switch-link">
+          <span>&#9635;</span>
+          Reports
+        </RouterLink>
       </div>
 
       <p v-if="error" class="alert error-alert">{{ error }}</p>

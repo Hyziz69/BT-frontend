@@ -52,14 +52,14 @@
           <span>Applications</span>
         </RouterLink>
 
-        <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
+        <RouterLink
+          v-if="isAdmin"
+          to="/admin"
+          class="nav-item"
+          :class="{ 'router-link-active': route.path.startsWith('/admin') }"
+        >
           <span class="nav-icon">★</span>
           <span>Admin</span>
-        </RouterLink>
-
-        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
-          <span class="nav-icon">◷</span>
-          <span>Activity Log</span>
         </RouterLink>
       </nav>
 
@@ -117,43 +117,34 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import NotificationBell from './NotificationBell.vue'
 import { useTeamsStore } from '../stores/teams'
-import { onMounted } from 'vue'
-
-const teamsStore = useTeamsStore()
-
-const teamLink = computed(() => {
-  if (teamsStore.teams.length > 0 && teamsStore.teams[0]) {
-    return `/teams/${teamsStore.teams[0].id}`
-  }
-  return '/teams'
-})
-
-onMounted(() => {
-  if (isStudent.value) {
-    teamsStore.fetchTeams()
-  }
-})
+import NotificationBell from './NotificationBell.vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const teamsStore = useTeamsStore()
 
 const user = computed(() => authStore.user as any)
 
 const isStudent = computed(() => user.value?.account_type === 'student')
-
 const isCompany = computed(() => user.value?.account_type === 'company_contact')
-
 const isMentor = computed(() => user.value?.account_type === 'mentor')
 
 const isAdmin = computed(() =>
   ['nti_admin', 'superadmin'].includes(user.value?.account_type ?? ''),
 )
+
+const teamLink = computed(() => {
+  if (teamsStore.teams.length > 0 && teamsStore.teams[0]) {
+    return `/teams/${teamsStore.teams[0].id}`
+  }
+
+  return '/teams'
+})
 
 const avatarUrl = computed(() => user.value?.avatar_url ?? null)
 
@@ -183,6 +174,12 @@ const initials = computed(() => {
   const l = user.value?.last_name?.[0] ?? ''
 
   return (f + l).toUpperCase() || 'NT'
+})
+
+onMounted(() => {
+  if (isStudent.value) {
+    teamsStore.fetchTeams()
+  }
 })
 
 function goToProfile() {

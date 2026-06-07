@@ -27,6 +27,11 @@
           <span>◷</span>
           Activity Log
         </RouterLink>
+
+        <RouterLink to="/admin/reports" class="switch-link">
+          <span>&#9635;</span>
+          Reports
+        </RouterLink>
       </div>
 
       <div v-if="accessDenied" class="empty">
