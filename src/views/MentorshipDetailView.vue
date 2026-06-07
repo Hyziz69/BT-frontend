@@ -142,6 +142,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mentorApi } from '../api/mentor'
 import { challengeApplicationsApi } from '../api/challenges'
+import { milestonesApi } from '../api/milestones'
 import AppLayout from '../components/AppLayout.vue'
 import type { Consultation, Mentorship, MentorshipPerson, Milestone } from '../types'
 
@@ -179,7 +180,7 @@ async function addMilestone() {
   if (!msForm.title || !appId.value) return
   savingMs.value = true
   try {
-    await challengeApplicationsApi.addMilestone(appId.value, {
+    await milestonesApi.create(appId.value, {
       title: msForm.title,
       due_date: msForm.due_date || null,
       comment: msForm.comment || null,
@@ -193,7 +194,7 @@ async function addMilestone() {
 async function updateMsStatus(m: Milestone, status: string) {
   m.status = status as Milestone['status']
   try {
-    await challengeApplicationsApi.updateMilestone(appId.value, m.id, { status })
+    await milestonesApi.update(appId.value, m.id, { status })
   } catch {
     /* optimistic */
   }

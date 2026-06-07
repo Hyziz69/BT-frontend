@@ -600,9 +600,12 @@ async function loadAll() {
 
     stats.value = dashboard
     users.value = allUsers
+    console.log('All users:', allUsers)
+    console.log('Mentors:', mentors.value)
     programs.value = allPrograms
     calls.value = allCalls
     applications.value = allApplications
+    
   } catch (e: any) {
     handleApiError(e)
   } finally {
