@@ -319,9 +319,9 @@
               {{ savingCv ? 'Uploading...' : currentCvUrl ? 'Replace CV' : 'Upload CV' }}
             </button>
 
-            <a v-if="currentCvUrl" :href="currentCvUrl" target="_blank" class="secondary-link">
+            <button v-if="currentCvUrl" class="secondary-btn" type="button" @click="openCv">
               Open CV
-            </a>
+            </button>
 
             <button
               v-if="currentCvUrl"
@@ -430,6 +430,12 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { useAuthStore } from '../stores/auth'
 import { profileApi, type ProfileOverview, type ProfileUser } from '../api/profile'
+import api from '../api/axios'
+
+async function openCv() {
+  if (!currentCvUrl.value) return
+  window.open(currentCvUrl.value, '_blank')
+}
 
 const authStore = useAuthStore()
 
