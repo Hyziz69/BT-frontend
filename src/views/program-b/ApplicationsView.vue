@@ -38,7 +38,7 @@
             </div>
           </div>
           <div class="app-right">
-            <span class="status-badge" :class="app.status">{{ app.status.replace(/_/g, ' ') }}</span>
+            <span class="status-badge" :class="app.status ?? ''">{{ (app.status ?? 'unknown').replace(/_/g, ' ') }}</span>
             <span class="app-date">
               {{ app.submitted_at ? new Date(app.submitted_at).toLocaleDateString('sk-SK') : 'Not submitted' }}
             </span>
@@ -125,7 +125,7 @@ onMounted(async () => {
   pageError.value = null
   try {
     const appResponse = await applicationsBApi.getAll()
-    applications.value = appResponse.data
+    applications.value = (appResponse.data as any).applications ?? appResponse.data ?? []
 
     const callsResponse = await callsApi.getAll()
     programBCalls.value = callsResponse.data
