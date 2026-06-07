@@ -504,7 +504,11 @@ const account = computed<ProfileUser | null>(() => {
 })
 
 const selectedPhoneCountry = computed(() => {
-  return phoneCountries.find((country) => country.code === phoneCountryCode.value) ?? phoneCountries[0]
+  return phoneCountries.find((country) => country.code === phoneCountryCode.value) ?? {
+    flag: '🌍',
+    code: '+',
+    name: 'Other country',
+  }
 })
 
 const fullName = computed(() => {

@@ -1,16 +1,39 @@
 <template>
   <AppLayout>
     <div class="admin">
-      <!-- Header -->
       <div class="page-header">
         <div class="header-content">
+          <span class="kicker">Administration</span>
           <h1 class="page-title">Admin Panel</h1>
-          <p class="page-subtitle">User approvals, calls, programs, mentor assignment and reporting.</p>
+          <p class="page-subtitle">
+            Manage users, programs, calls and mentor assignment from one clean workspace.
+          </p>
         </div>
-        <button class="btn-secondary" @click="loadAll" :disabled="loading || saving">Refresh</button>
+
+        <div class="header-actions">
+          <button class="btn-primary" @click="loadAll" :disabled="loading || saving">
+            {{ loading ? 'Refreshing...' : 'Refresh' }}
+          </button>
+        </div>
       </div>
 
-      <!-- Access denied -->
+      <div class="admin-switch">
+        <RouterLink to="/admin" class="switch-link active-switch">
+          <span>★</span>
+          Admin Panel
+        </RouterLink>
+
+        <RouterLink to="/admin/activity" class="switch-link">
+          <span>◷</span>
+          Activity Log
+        </RouterLink>
+
+        <RouterLink to="/admin/reports" class="switch-link">
+          <span>&#9635;</span>
+          Reports
+        </RouterLink>
+      </div>
+
       <div v-if="accessDenied" class="empty">
         <div class="empty-icon">⛔</div>
         <h2>403 — Access denied</h2>
@@ -23,35 +46,92 @@
         <p v-if="error" class="banner error">{{ error }}</p>
         <p v-if="successMessage" class="banner success">{{ successMessage }}</p>
 
-        <!-- Stats -->
-        <section v-if="stats" class="stats-grid">
-          <div class="stat-card"><h3>Total applications</h3><p>{{ stats.total_applications }}</p></div>
-          <div class="stat-card"><h3>Approved</h3><p>{{ stats.approved_applications }}</p></div>
-          <div class="stat-card"><h3>Rejected</h3><p>{{ stats.rejected_applications }}</p></div>
-          <div class="stat-card"><h3>Pending applications</h3><p>{{ stats.pending_applications }}</p></div>
-          <div class="stat-card"><h3>Open calls</h3><p>{{ stats.open_calls }}</p></div>
-          <div class="stat-card"><h3>Programs</h3><p>{{ stats.total_programs }}</p></div>
-          <div class="stat-card"><h3>Mentors</h3><p>{{ stats.mentors_count }}</p></div>
-          <div class="stat-card"><h3>Pending users</h3><p>{{ stats.pending_users_count }}</p></div>
+        <section v-if="stats" class="overview-section">
+          <div class="section-heading compact">
+            <div>
+              <h2>Admin overview</h2>
+              <p>Navigation cards move you to sections. Info cards show only platform numbers.</p>
+            </div>
+          </div>
+
+          <h3 class="overview-group-title">Navigation</h3>
+
+          <div class="stats-grid">
+            <button
+              v-for="card in navigationCards"
+              :key="card.key"
+              type="button"
+              class="stat-card clickable"
+              :class="card.tone"
+              @click="scrollToSection(card.target)"
+            >
+              <div class="stat-top">
+                <span class="stat-icon">{{ card.icon }}</span>
+                <span class="stat-target">{{ card.targetLabel }}</span>
+              </div>
+
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.value }}</p>
+              <small>{{ card.subtitle }}</small>
+
+              <div class="summary-extra">
+                {{ card.info }}
+              </div>
+            </button>
+          </div>
+
+          <h3 class="overview-group-title second">Platform numbers</h3>
+
+          <div class="stats-grid info-grid">
+            <div
+              v-for="card in infoCards"
+              :key="card.key"
+              class="stat-card info-only"
+              :class="card.tone"
+            >
+              <div class="stat-top">
+                <span class="stat-icon">{{ card.icon }}</span>
+                <span class="stat-target muted-target">Overview only</span>
+              </div>
+
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.value }}</p>
+              <small>{{ card.subtitle }}</small>
+
+              <div class="summary-extra">
+                {{ card.info }}
+              </div>
+            </div>
+          </div>
         </section>
 
-        <!-- User approvals -->
-        <section class="card">
+        <section
+          ref="usersSection"
+          class="card module-card"
+          :class="{ 'section-highlight': activeSection === 'users' }"
+        >
           <div class="section-heading">
             <div>
               <h2>User approvals</h2>
               <p>Review registered users and manage access.</p>
             </div>
+
+            <div class="module-counter">
+              <strong>{{ filteredUsers.length }}</strong>
+              <span>shown</span>
+            </div>
           </div>
 
           <div class="filters">
             <input v-model="userSearch" type="text" placeholder="Search by name or email" />
+
             <select v-model="userStatusFilter">
               <option value="">All statuses</option>
               <option value="pending">Pending</option>
               <option value="active">Approved</option>
               <option value="suspended">Rejected</option>
             </select>
+
             <select v-model="userTypeFilter">
               <option value="">All types</option>
               <option value="student">Student</option>
@@ -61,7 +141,7 @@
             </select>
           </div>
 
-          <div class="table-wrap" v-if="filteredUsers.length">
+          <div v-if="filteredUsers.length" class="table-wrap">
             <table>
               <thead>
                 <tr>
@@ -73,20 +153,25 @@
                   <th>Actions</th>
                 </tr>
               </thead>
+
               <tbody>
                 <tr v-for="user in filteredUsers" :key="user.id">
                   <td>{{ user.first_name }} {{ user.last_name }}</td>
                   <td>{{ user.email }}</td>
                   <td><span class="tag">{{ user.account_type }}</span></td>
-                  <td><span class="status-badge" :class="statusClass(user.status)">{{ user.status }}</span></td>
+                  <td>
+                    <span class="status-badge" :class="statusClass(user.status)">
+                      {{ user.status }}
+                    </span>
+                  </td>
                   <td>{{ formatDate(user.created_at) }}</td>
                   <td>
                     <div class="user-actions">
                       <button
                         v-if="user.status !== 'active'"
                         class="action-pill approve"
-                        @click="approveUser(user.id)"
                         :disabled="saving"
+                        @click="approveUser(user.id)"
                       >
                         Approve
                       </button>
@@ -94,16 +179,16 @@
                       <button
                         v-if="user.status !== 'suspended'"
                         class="action-pill reject"
-                        @click="rejectUser(user.id)"
                         :disabled="saving"
+                        @click="rejectUser(user.id)"
                       >
                         Reject
                       </button>
 
                       <button
                         class="action-pill delete"
-                        @click="deleteUser(user)"
                         :disabled="saving || isCurrentUser(user)"
+                        @click="deleteUser(user)"
                       >
                         Delete
                       </button>
@@ -117,14 +202,39 @@
           <p v-else class="muted">No users found.</p>
         </section>
 
-        <!-- Programs -->
-        <section class="grid-two">
-          <div class="card">
-            <div class="section-heading">
-              <div>
-                <h2>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h2>
-                <p>Configure available programs for participants.</p>
+        <section
+          ref="programsSection"
+          class="card module-card"
+          :class="{ 'section-highlight': activeSection === 'programs' }"
+        >
+          <div class="section-heading">
+            <div>
+              <h2>Programs</h2>
+              <p>Simple list of programs. Create or edit only when needed.</p>
+            </div>
+
+            <div class="section-actions">
+              <div class="module-counter">
+                <strong>{{ programs.length }}</strong>
+                <span>programs</span>
               </div>
+
+              <button class="btn-primary" type="button" @click="openProgramCreate">
+                Create program
+              </button>
+            </div>
+          </div>
+
+          <div v-if="programFormOpen" class="inline-form-panel">
+            <div class="inline-form-header">
+              <div>
+                <h3>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h3>
+                <p>Fill only the program data. You can close this form anytime.</p>
+              </div>
+
+              <button class="btn-secondary small" type="button" @click="closeProgramForm">
+                Close
+              </button>
             </div>
 
             <div class="form-grid">
@@ -158,62 +268,85 @@
 
               <label class="checkbox full">
                 <input v-model="programForm.is_active" type="checkbox" />
-                Active
+                Active program
               </label>
             </div>
 
             <div class="actions">
-              <button class="btn-primary" @click="submitProgram" :disabled="saving">
+              <button class="btn-primary" :disabled="saving" @click="submitProgram">
                 {{ editingProgramId ? 'Update program' : 'Create program' }}
               </button>
-              <button class="btn-secondary" @click="resetProgramForm" :disabled="saving">Reset</button>
+
+              <button class="btn-secondary" :disabled="saving" @click="resetProgramForm">
+                Reset
+              </button>
             </div>
           </div>
 
-          <div class="card">
-            <div class="section-heading">
-              <div>
-                <h2>Programs</h2>
-                <p>Existing program list.</p>
+          <div v-if="programs.length" class="simple-list">
+            <article v-for="program in programs" :key="program.id" class="simple-item">
+              <div class="item-main">
+                <span class="item-icon">◇</span>
+                <div>
+                  <h3>{{ program.name }}</h3>
+                  <p>{{ program.description || 'No description added.' }}</p>
+
+                  <div class="item-meta">
+                    <span>{{ program.type }}</span>
+                    <span>{{ program.calls_count ?? 0 }} calls</span>
+                    <span>{{ program.min_team_size }}–{{ program.max_team_size }} members</span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div class="table-wrap" v-if="programs.length">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Active</th>
-                    <th>Calls</th>
-                    <th></th>
-                  </tr>
-                </thead>
+              <div class="item-actions">
+                <span class="status-badge" :class="program.is_active ? 'status-active' : 'status-default'">
+                  {{ program.is_active ? 'active' : 'inactive' }}
+                </span>
 
-                <tbody>
-                  <tr v-for="program in programs" :key="program.id">
-                    <td>{{ program.name }}</td>
-                    <td><span class="tag">{{ program.type }}</span></td>
-                    <td>{{ program.is_active ? 'yes' : 'no' }}</td>
-                    <td>{{ program.calls_count ?? 0 }}</td>
-                    <td><button class="btn-secondary small" @click="editProgram(program)">Edit</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p v-else class="muted">No programs found.</p>
+                <button class="btn-secondary small" @click="editProgram(program)">
+                  Edit
+                </button>
+              </div>
+            </article>
           </div>
+
+          <p v-else class="muted">No programs found.</p>
         </section>
 
-        <!-- Calls -->
-        <section class="grid-two">
-          <div class="card">
-            <div class="section-heading">
-              <div>
-                <h2>{{ editingCallId ? 'Edit call' : 'Create call' }}</h2>
-                <p>Create and schedule program calls.</p>
+        <section
+          ref="callsSection"
+          class="card module-card"
+          :class="{ 'section-highlight': activeSection === 'calls' }"
+        >
+          <div class="section-heading">
+            <div>
+              <h2>Calls</h2>
+              <p>Simple list of calls. Create, edit, open or close a call.</p>
+            </div>
+
+            <div class="section-actions">
+              <div class="module-counter">
+                <strong>{{ calls.length }}</strong>
+                <span>calls</span>
               </div>
+
+              <button class="btn-primary" type="button" @click="openCallCreate">
+                Create call
+              </button>
+            </div>
+          </div>
+
+          <div v-if="callFormOpen" class="inline-form-panel">
+            <div class="inline-form-header">
+              <div>
+                <h3>{{ editingCallId ? 'Edit call' : 'Create call' }}</h3>
+                <p>Choose program, title and dates for this call.</p>
+              </div>
+
+              <button class="btn-secondary small" type="button" @click="closeCallForm">
+                Close
+              </button>
             </div>
 
             <div class="form-grid">
@@ -252,63 +385,81 @@
             </div>
 
             <div class="actions">
-              <button class="btn-primary" @click="submitCall" :disabled="saving">
+              <button class="btn-primary" :disabled="saving" @click="submitCall">
                 {{ editingCallId ? 'Update call' : 'Create call' }}
               </button>
-              <button class="btn-secondary" @click="resetCallForm" :disabled="saving">Reset</button>
+
+              <button class="btn-secondary" :disabled="saving" @click="resetCallForm">
+                Reset
+              </button>
             </div>
           </div>
 
-          <div class="card">
-            <div class="section-heading">
-              <div>
-                <h2>Calls</h2>
-                <p>Open, close and edit calls.</p>
+          <div v-if="calls.length" class="simple-list">
+            <article v-for="call in calls" :key="call.id" class="simple-item">
+              <div class="item-main">
+                <span class="item-icon">◉</span>
+                <div>
+                  <h3>{{ call.title }}</h3>
+                  <p>{{ call.description || 'No description added.' }}</p>
+
+                  <div class="item-meta">
+                    <span>{{ call.program?.name ?? 'No program' }}</span>
+                    <span>{{ call.applications_count ?? 0 }} applications</span>
+                    <span>Opens: {{ call.opens_at ? formatDate(call.opens_at) : '—' }}</span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div class="table-wrap" v-if="calls.length">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Program</th>
-                    <th>Status</th>
-                    <th>Apps</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
+              <div class="item-actions call-actions">
+                <span class="status-badge" :class="callStatusClass(call.status)">
+                  {{ call.status }}
+                </span>
 
-                <tbody>
-                  <tr v-for="call in calls" :key="call.id">
-                    <td>{{ call.title }}</td>
-                    <td>{{ call.program?.name }}</td>
-                    <td><span class="tag">{{ call.status }}</span></td>
-                    <td>{{ call.applications_count ?? 0 }}</td>
-                    <td class="action-row">
-                      <button class="btn-secondary small" @click="editCall(call)">Edit</button>
-                      <button class="btn-success small" @click="openCall(call.id)" :disabled="call.status === 'open'">Open</button>
-                      <button class="btn-danger small" @click="closeCall(call.id)" :disabled="call.status === 'closed'">Close</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                <button class="btn-secondary small" @click="editCall(call)">
+                  Edit
+                </button>
 
-            <p v-else class="muted">No calls found.</p>
+                <button
+                  class="btn-success small"
+                  :disabled="call.status === 'open' || saving"
+                  @click="openCall(call.id)"
+                >
+                  Open
+                </button>
+
+                <button
+                  class="btn-danger small"
+                  :disabled="call.status === 'closed' || saving"
+                  @click="closeCall(call.id)"
+                >
+                  Close
+                </button>
+              </div>
+            </article>
           </div>
+
+          <p v-else class="muted">No calls found.</p>
         </section>
 
-        <!-- Applications -->
-        <section class="card">
+        <section
+          ref="applicationsSection"
+          class="card module-card"
+          :class="{ 'section-highlight': activeSection === 'applications' }"
+        >
           <div class="section-heading">
             <div>
               <h2>Applications / Assign mentor</h2>
               <p>Attach active mentors to submitted applications.</p>
             </div>
+
+            <div class="module-counter">
+              <strong>{{ applications.length }}</strong>
+              <span>applications</span>
+            </div>
           </div>
 
-          <div class="table-wrap" v-if="applications.length">
+          <div v-if="applications.length" class="table-wrap">
             <table>
               <thead>
                 <tr>
@@ -343,6 +494,7 @@
                         {{ mentor.first_name }} {{ mentor.last_name }}
                       </option>
                     </select>
+
                     <button
                       class="btn-primary small"
                       :disabled="!selectedMentorByApplication[application.id] || saving"
@@ -360,7 +512,6 @@
         </section>
       </template>
 
-      <!-- Delete modal -->
       <div v-if="deleteModalOpen && userToDelete" class="modal-backdrop" @click.self="closeDeleteModal">
         <div class="delete-modal">
           <div class="modal-icon">!</div>
@@ -392,14 +543,14 @@
           />
 
           <div class="modal-actions">
-            <button class="btn-secondary" @click="closeDeleteModal" :disabled="saving">
+            <button class="btn-secondary" :disabled="saving" @click="closeDeleteModal">
               Cancel
             </button>
 
             <button
               class="btn-danger"
-              @click="confirmDeleteUser"
               :disabled="saving || deleteConfirmationText.trim().toLowerCase() !== 'delete'"
+              @click="confirmDeleteUser"
             >
               Yes, delete
             </button>
@@ -424,6 +575,8 @@ import {
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../components/AppLayout.vue'
 
+type SectionKey = 'users' | 'programs' | 'calls' | 'applications'
+
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -439,8 +592,16 @@ const programs = ref<AdminProgram[]>([])
 const calls = ref<AdminCall[]>([])
 const applications = ref<AdminApplication[]>([])
 
+const usersSection = ref<HTMLElement | null>(null)
+const programsSection = ref<HTMLElement | null>(null)
+const callsSection = ref<HTMLElement | null>(null)
+const applicationsSection = ref<HTMLElement | null>(null)
+const activeSection = ref<SectionKey | null>(null)
+
 const editingProgramId = ref<string | null>(null)
 const editingCallId = ref<string | null>(null)
+const programFormOpen = ref(false)
+const callFormOpen = ref(false)
 
 const selectedMentorByApplication = ref<Record<string, string>>({})
 
@@ -469,6 +630,104 @@ const filteredUsers = computed(() => {
 
     return matchesSearch && matchesStatus && matchesType
   })
+})
+
+const navigationCards = computed(() => {
+  if (!stats.value) {
+    return []
+  }
+
+  return [
+    {
+      key: 'users',
+      target: 'users' as SectionKey,
+      targetLabel: 'Go to users',
+      icon: '◉',
+      title: 'Users',
+      value: stats.value.pending_users_count,
+      subtitle: `${stats.value.users_count} total · pending approvals`,
+      info: 'Approve, reject or delete user accounts.',
+      tone: 'green',
+    },
+    {
+      key: 'programs',
+      target: 'programs' as SectionKey,
+      targetLabel: 'Go to programs',
+      icon: '◇',
+      title: 'Programs',
+      value: stats.value.total_programs,
+      subtitle: `${stats.value.active_programs} active programs`,
+      info: 'Create or edit Program A and Program B settings.',
+      tone: 'blue',
+    },
+    {
+      key: 'calls',
+      target: 'calls' as SectionKey,
+      targetLabel: 'Go to calls',
+      icon: '◎',
+      title: 'Calls',
+      value: stats.value.open_calls,
+      subtitle: `${stats.value.total_calls} total calls`,
+      info: 'Open, close and schedule calls for programs.',
+      tone: 'yellow',
+    },
+    {
+      key: 'applications',
+      target: 'applications' as SectionKey,
+      targetLabel: 'Go to applications',
+      icon: '✦',
+      title: 'Applications',
+      value: stats.value.total_applications,
+      subtitle: `${stats.value.pending_applications} pending`,
+      info: 'Check applications and assign mentors.',
+      tone: 'purple',
+    },
+  ]
+})
+
+const infoCards = computed(() => {
+  if (!stats.value) {
+    return []
+  }
+
+  return [
+    {
+      key: 'approved',
+      icon: '✓',
+      title: 'Approved',
+      value: stats.value.approved_applications,
+      subtitle: 'approved applications',
+      info: 'Shows how many applications were accepted.',
+      tone: 'green',
+    },
+    {
+      key: 'rejected',
+      icon: '!',
+      title: 'Rejected',
+      value: stats.value.rejected_applications,
+      subtitle: 'rejected applications',
+      info: 'Shows how many applications were rejected.',
+      tone: 'red',
+    },
+    {
+      key: 'pending',
+      icon: '⌁',
+      title: 'Pending',
+      value: stats.value.pending_applications,
+      subtitle: 'waiting for review',
+      info: 'Applications still waiting for admin action.',
+      tone: 'yellow',
+    },
+    {
+      key: 'mentors',
+      icon: '★',
+      title: 'Mentors',
+      value: stats.value.mentors_count,
+      subtitle: 'active mentors',
+      info: 'Mentors available for application assignment.',
+      tone: 'blue',
+    },
+  ]
 })
 
 const programForm = ref({
@@ -504,20 +763,67 @@ function statusClass(status: string) {
   return 'status-default'
 }
 
+function callStatusClass(status: string) {
+  if (status === 'open') return 'status-active'
+  if (status === 'draft') return 'status-pending'
+  if (status === 'closed') return 'status-rejected'
+  return 'status-default'
+}
+
 function isCurrentUser(user: AdminUser) {
   return authStore.user?.id === user.id
 }
 
 function formatDateTimeLocal(value: string | null) {
   if (!value) return ''
+
   const date = new Date(value)
   const offset = date.getTimezoneOffset()
   const local = new Date(date.getTime() - offset * 60000)
+
   return local.toISOString().slice(0, 16)
 }
 
 function toApiDate(value: string) {
   return value ? new Date(value).toISOString() : null
+}
+
+function sectionElement(section: SectionKey) {
+  const map: Record<SectionKey, HTMLElement | null> = {
+    users: usersSection.value,
+    programs: programsSection.value,
+    calls: callsSection.value,
+    applications: applicationsSection.value,
+  }
+
+  return map[section]
+}
+
+function scrollToSection(section: SectionKey) {
+  const element = sectionElement(section)
+
+  if (!element) {
+    return
+  }
+
+  activeSection.value = section
+  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  window.setTimeout(() => {
+    if (activeSection.value === section) {
+      activeSection.value = null
+    }
+  }, 1400)
+}
+
+function openProgramCreate() {
+  resetProgramForm()
+  programFormOpen.value = true
+}
+
+function closeProgramForm() {
+  resetProgramForm()
+  programFormOpen.value = false
 }
 
 function resetProgramForm() {
@@ -534,6 +840,7 @@ function resetProgramForm() {
 
 function editProgram(program: AdminProgram) {
   editingProgramId.value = program.id
+  programFormOpen.value = true
   programForm.value = {
     type: program.type,
     name: program.name,
@@ -542,6 +849,17 @@ function editProgram(program: AdminProgram) {
     max_team_size: program.max_team_size,
     is_active: program.is_active,
   }
+  scrollToSection('programs')
+}
+
+function openCallCreate() {
+  resetCallForm()
+  callFormOpen.value = true
+}
+
+function closeCallForm() {
+  resetCallForm()
+  callFormOpen.value = false
 }
 
 function resetCallForm() {
@@ -557,6 +875,7 @@ function resetCallForm() {
 
 function editCall(call: AdminCall) {
   editingCallId.value = call.id
+  callFormOpen.value = true
   callForm.value = {
     program_id: call.program_id,
     title: call.title,
@@ -564,6 +883,7 @@ function editCall(call: AdminCall) {
     opens_at: formatDateTimeLocal(call.opens_at),
     closes_at: formatDateTimeLocal(call.closes_at),
   }
+  scrollToSection('calls')
 }
 
 function handleApiError(e: any) {
@@ -719,7 +1039,7 @@ async function submitProgram() {
       successMessage.value = 'Program created successfully.'
     }
 
-    resetProgramForm()
+    closeProgramForm()
     await loadAll()
   } catch (e: any) {
     handleApiError(e)
@@ -750,7 +1070,7 @@ async function submitCall() {
       successMessage.value = 'Call created successfully.'
     }
 
-    resetCallForm()
+    closeCallForm()
     await loadAll()
   } catch (e: any) {
     handleApiError(e)
@@ -830,9 +1150,21 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
   padding: 2rem 0 1.5rem 0;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.kicker {
+  display: inline-flex;
+  background: #ecfdf5;
+  color: #047857;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
 }
 
 .page-title {
@@ -847,6 +1179,44 @@ onMounted(async () => {
 .page-subtitle {
   color: #64748b;
   font-size: 0.95rem;
+}
+
+.header-actions,
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.admin-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+}
+
+.switch-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.86rem;
+  transition: all 0.15s ease;
+}
+
+.switch-link:hover,
+.active-switch {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #6ee7b7;
 }
 
 .banner {
@@ -869,22 +1239,150 @@ onMounted(async () => {
   border-color: #a7f3d0;
 }
 
+.overview-section {
+  margin-bottom: 1.5rem;
+}
+
+.overview-group-title {
+  margin: 0 0 0.7rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.overview-group-title.second {
+  margin-top: 1.25rem;
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
-  margin-bottom: 2rem;
 }
 
 .stat-card {
+  position: relative;
+  overflow: hidden;
+  text-align: left;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 1.25rem;
+  border-radius: 20px;
+  padding: 1.2rem;
+  min-height: 185px;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease,
+    background 0.22s ease;
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.info-only {
+  cursor: default;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #a7f3d0;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+  background: #ffffff;
+}
+
+.stat-card.info-only:hover {
+  transform: translateY(-1px);
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 95px;
+  height: 95px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  opacity: 0.75;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.stat-card:hover::after {
+  transform: scale(1.08);
+  opacity: 0.95;
+}
+
+.stat-card.blue::after {
+  background: #eff6ff;
+}
+
+.stat-card.yellow::after {
+  background: #fef3c7;
+}
+
+.stat-card.purple::after {
+  background: #f5f3ff;
+}
+
+.stat-card.red::after {
+  background: #fee2e2;
+}
+
+.stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #6ee7b7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.stat-target {
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+  opacity: 0.8;
+  transition: opacity 0.18s ease, background 0.18s ease;
+}
+
+.stat-card:hover .stat-target {
+  opacity: 1;
+  background: #d1fae5;
+}
+
+.muted-target {
+  color: #64748b;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.stat-card:hover .muted-target {
+  background: #f8fafc;
 }
 
 .stat-card h3 {
+  position: relative;
+  z-index: 1;
   font-size: 0.74rem;
   font-weight: 800;
   color: #64748b;
@@ -894,12 +1392,44 @@ onMounted(async () => {
 }
 
 .stat-card p {
+  position: relative;
+  z-index: 1;
   font-family: 'Plus Jakarta Sans', sans-serif;
   margin: 0;
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.04em;
+}
+
+.stat-card small {
+  position: relative;
+  z-index: 1;
+  display: block;
+  color: #64748b;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+}
+
+.summary-extra {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.75rem;
+  color: #334155;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  height: 42px;
+  opacity: 0.62;
+  transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.stat-card:hover .summary-extra {
+  opacity: 1;
+  color: #0f172a;
+}
+
+.info-grid .stat-card {
+  min-height: 165px;
 }
 
 .card {
@@ -909,13 +1439,35 @@ onMounted(async () => {
   padding: 1.5rem;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
   margin-bottom: 1.25rem;
+  scroll-margin-top: 1.5rem;
+}
+
+.module-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.module-card:hover {
+  border-color: #d1fae5;
+  box-shadow: 0 16px 35px rgba(15, 23, 42, 0.06);
+}
+
+.module-card.section-highlight {
+  border-color: #6ee7b7;
+  box-shadow:
+    0 0 0 4px rgba(110, 231, 183, 0.18),
+    0 16px 35px rgba(15, 23, 42, 0.08);
 }
 
 .section-heading {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.section-heading.compact {
+  margin-bottom: 0.9rem;
 }
 
 .section-heading h2 {
@@ -933,11 +1485,58 @@ onMounted(async () => {
   font-size: 0.88rem;
 }
 
-.grid-two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
+.module-counter {
+  min-width: 82px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 0.55rem 0.75rem;
+  text-align: center;
+}
+
+.module-counter strong {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0f172a;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.module-counter span {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-top: 0.2rem;
+}
+
+.inline-form-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.inline-form-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.inline-form-header h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.2rem;
+}
+
+.inline-form-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.84rem;
 }
 
 .form-grid {
@@ -1051,6 +1650,10 @@ select option[disabled] {
 .btn-secondary,
 .btn-success,
 .btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   border: 1px solid transparent;
   border-radius: 12px;
   padding: 0.62rem 1.05rem;
@@ -1110,6 +1713,93 @@ select option[disabled] {
 .small {
   padding: 0.42rem 0.75rem;
   font-size: 0.8rem;
+}
+
+.simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.simple-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 16px;
+  transition: all 0.15s ease;
+}
+
+.simple-item:hover {
+  background: #ffffff;
+  border-color: #bbf7d0;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.item-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.item-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #6ee7b7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 900;
+}
+
+.item-main h3 {
+  margin: 0 0 0.25rem;
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.item-main p {
+  color: #64748b;
+  margin: 0 0 0.55rem;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.item-meta span {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.call-actions {
+  max-width: 280px;
 }
 
 .user-actions {
@@ -1213,7 +1903,6 @@ tbody tr:hover {
   background: #fbfdfc;
 }
 
-.action-row,
 .assign-cell {
   display: flex;
   gap: 0.4rem;
@@ -1394,9 +2083,22 @@ tbody tr:hover {
 }
 
 @media (max-width: 1100px) {
-  .grid-two,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-header,
+  .section-heading,
+  .inline-form-header,
+  .simple-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions,
+  .section-actions,
+  .item-actions {
+    justify-content: flex-start;
   }
 
   .user-actions {

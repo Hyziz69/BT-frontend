@@ -13,6 +13,23 @@
         </button>
       </div>
 
+      <div class="admin-switch">
+        <RouterLink to="/admin" class="switch-link">
+          <span>★</span>
+          Admin Panel
+        </RouterLink>
+
+        <RouterLink to="/admin/activity" class="switch-link active-switch">
+          <span>◷</span>
+          Activity Log
+        </RouterLink>
+
+        <RouterLink to="/admin/reports" class="switch-link">
+          <span>&#9635;</span>
+          Reports
+        </RouterLink>
+      </div>
+
       <p v-if="error" class="alert error-alert">{{ error }}</p>
 
       <section class="toolbar-card">
@@ -272,7 +289,7 @@ async function loadEvents(page = 1) {
       entity_type: filters.entity_type || undefined,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined,
-      sort: filters.sort,
+      sort: filters.sort as 'newest' | 'oldest',
       per_page: filters.per_page,
       page,
     })
@@ -478,7 +495,7 @@ function formatPayloadValue(value: unknown) {
   gap: 1rem;
   padding: 2.5rem 0 2rem;
   border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .kicker {
@@ -502,6 +519,36 @@ function formatPayloadValue(value: unknown) {
 
 .page-header p {
   color: #8892a4;
+}
+
+.admin-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1.25rem;
+}
+
+.switch-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.86rem;
+  transition: all 0.15s ease;
+}
+
+.switch-link:hover,
+.active-switch {
+  background: #0f1117;
+  border-color: #0f1117;
+  color: #6ee7b7;
 }
 
 .refresh-btn {
