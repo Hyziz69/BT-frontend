@@ -36,7 +36,7 @@
           <h2>Team members</h2>
           <div v-if="members.length === 0" class="empty">No members listed.</div>
           <div v-else class="member-list">
-            <div v-for="m in members" :key="m.id" class="member-row">
+            <div v-for="m in members" :key="m.id" class="member-row" style="cursor:pointer" @click="router.push(`/users/${m.id}/profile`)">
               <div class="avatar">{{ initials(m) }}</div>
               <div class="member-info">
                 <strong>{{ m.first_name }} {{ m.last_name }}</strong>
@@ -295,6 +295,7 @@ onMounted(load)
 .muted { color: #8892a4; font-size: 0.8rem; }
 .empty { color: #8892a4; font-size: 0.9rem; }
 
+.member-row:hover .member-info strong { color: #16a34a; }
 .member-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .member-row { display: flex; align-items: center; gap: 0.8rem; }
 .avatar {

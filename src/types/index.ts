@@ -96,6 +96,14 @@ export interface Application {
   milestones?: Milestone[]
   mentorship?: Mentorship[];
   available_transitions?: string[];
+  mentorships?: Array<{
+    id: string
+    mentor?: {
+      id: string
+      first_name: string
+      last_name: string
+    }
+  }>
 }
 
 export interface Mentorship {

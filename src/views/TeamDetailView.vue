@@ -43,7 +43,7 @@
               <div class="member-avatar">
                 {{ member.first_name ? member.first_name.charAt(0).toUpperCase() : 'U' }}
               </div>
-              <div class="member-info">
+              <div class="member-info" style="cursor:pointer" @click="router.push(`/users/${member.id}/profile`)">
                 <strong>{{ member.first_name }} {{ member.last_name }}</strong>
                 <span class="email">{{ member.email }}</span>
               </div>

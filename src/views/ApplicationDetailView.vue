@@ -42,6 +42,21 @@
           </div>
         </div>
 
+        <!-- Mentor -->
+        <div class="section" v-if="application.mentorships && application.mentorships.length > 0">
+          <h2>Mentor</h2>
+          <div v-for="m in application.mentorships" :key="m.id" class="detail-row">
+            <span class="label">Assigned mentor</span>
+            <span
+              class="strong"
+              style="cursor:pointer; color:#16a34a"
+              @click="router.push(`/users/${m.mentor?.id}/profile`)"
+            >
+              {{ (m.mentor as any)?.name ?? `${m.mentor?.first_name} ${m.mentor?.last_name}` }}
+            </span>
+          </div>
+        </div>
+
         <!-- Motivation Letter -->
         <div class="section" v-if="application.motivation_letter">
           <h2>Motivation Letter</h2>

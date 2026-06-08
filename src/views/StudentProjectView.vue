@@ -68,7 +68,7 @@
         <div class="section" v-if="members.length">
           <h2>Team members</h2>
           <div class="member-list">
-            <div v-for="m in members" :key="m.id" class="member-row">
+            <div v-for="m in members" :key="m.id" class="member-row" style="cursor:pointer" @click="router.push(`/users/${m.id}/profile`)">
               <div class="avatar">{{ initials(m) }}</div>
               <div class="member-info">
                 <strong>{{ m.first_name }} {{ m.last_name }}</strong>
