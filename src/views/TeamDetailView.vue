@@ -29,11 +29,14 @@
             <button @click="copyInviteCode" class="btn-primary">
               + Invite Code: {{teamsStore.currentTeam.invite_code}}
             </button>
+            <button v-if="isLeader" @click="handleDeleteTeam" class="btn-danger">
+              Delete Team
+            </button>
           </div>
 
           <div class="members-list">
             <div
-              v-for="member in teamsStore.currentTeam.members"
+              v-for="member in sortedMembers"
               :key="member.id"
               class="member-card"
             >
@@ -45,15 +48,15 @@
                 <span class="email">{{ member.email }}</span>
               </div>
               <div class="member-right">
-                <span class="role-badge" :class="member.pivot.role">{{ member.pivot.role }}</span>
-                <button
-                  v-if="isLeader && member.pivot.role !== 'leader'"
-                  @click="handleRemoveMember(member.id)"
-                  class="btn-danger"
-                >
-                  Remove
-                </button>
-                <button v-if="member.id === authStore.user?.id" @click="handleLeaveTeam" class="btn-danger">Leave</button>
+                <span class="role-badge" :class="member.role ?? 'member'">{{ member.role ?? 'member' }}</span>
+                  <button
+                    v-if="isLeader && member.role !== 'leader'"
+                    @click="handleRemoveMember(member.id)"
+                    class="btn-danger"
+                  >
+                    Remove
+                  </button>
+                  <button v-if="member.id === authStore.user?.id && member.role !== 'leader'" @click="handleLeaveTeam" class="btn-danger">Leave</button>
               </div>
             </div>
           </div>
@@ -70,6 +73,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useTeamsStore } from '../stores/teams'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../components/AppLayout.vue'
+import { teamsApi } from '../api/teams'
 
 const router = useRouter()
 const route = useRoute()
@@ -83,7 +87,26 @@ const inviteSuccess = ref<string | null>(null)
 const inviting = ref(false)
 const invitations = ref<any[]>([])
 
-const isLeader = computed(() => teamsStore.currentTeam?.leader.id === authStore.user?.id)
+const isLeader = computed(() => teamsStore.currentTeam?.leader?.id === authStore.user?.id)
+const sortedMembers = computed(() => {
+  if (!teamsStore.currentTeam?.members) return []
+  return [...teamsStore.currentTeam.members].sort((a, b) => {
+    if (a.role === 'leader') return -1
+    if (b.role === 'leader') return 1
+    return 0
+  })
+})
+
+async function handleDeleteTeam() {
+  if (!teamsStore.currentTeam) return
+  if (!confirm('Delete this team? This cannot be undone.')) return
+  try {
+    await teamsApi.delete(teamsStore.currentTeam.id)
+    router.push('/teams')
+  } catch (e: any) {
+    alert(e.response?.data?.message ?? 'Failed to delete team.')
+  }
+}
 
 onMounted(async () => {
   await teamsStore.fetchTeam(route.params.id as string)
@@ -95,7 +118,6 @@ async function copyInviteCode() {
   if (!code) return
 
   try {
-    // Копируем текст
     await navigator.clipboard.writeText(code)
     alert('Kód pozvánky bol skopírovaný!')
   } catch (err) {
@@ -135,15 +157,15 @@ async function handleRemoveMember(userId: string) {
   }
 }
 async function handleLeaveTeam() {
-  if (!teamsStore.currentTeam) return
+  if (!teamsStore.currentTeam || !authStore.user) return
 
   const message = isLeader.value
     ? 'Pozor! Ste lídrom tímu. Ak opustíte tím, celý tím bude úplne vymazaný a rozpustený. Naozaj chcete pokračovať?'
-    : 'Naozaj chcete opustiť tento tím?';
+    : 'Naozaj chcete opustiť tento tím?'
 
   if (confirm(message)) {
     try {
-      await teamsStore.leaveTeam(teamsStore.currentTeam.id)
+      await teamsStore.removeMember(teamsStore.currentTeam.id, authStore.user.id)
       router.push('/teams')
     } catch (e) {
       console.error('Chyba pri opúšťaní tímu:', e)

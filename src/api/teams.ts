@@ -28,4 +28,10 @@ export const teamsApi = {
   removeMember(teamId: string, userId: string): Promise<void> {
     return api.delete(`/program-a/teams/${teamId}/members/${userId}`).then((r) => r.data)
   },
+  join(inviteCode: string): Promise<any> {
+    return api.post('/program-a/teams/join', { invite_code: inviteCode }).then((r) => r.data)
+  },
+  delete(teamId: string): Promise<void> {
+    return api.delete(`/program-a/teams/${teamId}`).then((r) => r.data)
+  },
 }

@@ -57,6 +57,7 @@ export interface StudentProfile {
 }
 
 export interface TeamMember extends User {
+  role?: string
   pivot?: {
     team_id: string
     user_id: string

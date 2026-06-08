@@ -5,65 +5,85 @@
         <div class="header-content">
           <div class="page-icon">◆</div>
           <div>
-            <h1 class="page-title">Challenges</h1>
-            <p class="page-subtitle">Open company challenges — apply with your team.</p>
+            <h1 class="page-title">{{ isCompany ? 'Program B' : 'Program B' }}</h1>
+            <p class="page-subtitle">{{ isCompany ? 'Manage your challenges and review applicants.' : 'Open company challenges — apply with your team.' }}</p>
           </div>
         </div>
+        <button v-if="isCompany" @click="openCreateChallenge" class="btn-primary">+ New Challenge</button>
       </div>
 
       <div v-if="loading" class="loading">Loading…</div>
 
       <template v-else>
-        <!-- My applications -->
-        <div v-if="myApps.length" class="section my-apps">
-          <h2>My applications</h2>
-          <div class="app-list">
-            <div v-for="app in myApps" :key="app.id" class="app-row">
-              <div class="app-info">
-                <RouterLink v-if="app.challenge?.id" :to="`/challenges/${app.challenge.id}`" class="app-title-link">
-                  {{ app.challenge?.title ?? 'Challenge' }}
-                </RouterLink>
-                <strong v-else>{{ app.challenge?.title ?? 'Challenge' }}</strong>
-                <span class="muted">
-                  {{ app.challenge?.company?.name ?? '' }}
-                  · applied {{ app.submitted_at ? formatDate(app.submitted_at) : '' }}
-                </span>
+        <!-- Company view -->
+        <template v-if="isCompany">
+          <div v-if="challenges.length === 0" class="section empty">No challenges yet. Create your first one.</div>
+          <div v-else class="challenge-list">
+            <div v-for="ch in challenges" :key="ch.id" class="challenge-row" @click="router.push(`/challenges/${ch.id}`)">
+              <div class="challenge-row-main">
+                <strong>{{ ch.title }}</strong>
+                <span class="muted">{{ ch.budget ? formatBudget(ch.budget) + ' €' : 'No budget' }}</span>
               </div>
-              <div class="app-right">
-                <span class="app-status" :class="statusClass(app.status)">{{ statusLabel(app.status) }}</span>
-                <RouterLink
-                  v-if="['approved', 'active', 'completed'].includes(app.status)"
-                  :to="`/projects/${app.id}`"
-                  class="project-link"
-                >
-                  Open project →
-                </RouterLink>
+              <div class="challenge-row-right">
+                <span class="status-badge" :class="ch.status">{{ ch.status }}</span>
+                <span class="candidates-count">{{ ch.candidates_count ?? 0 }} candidates</span>
+                <span class="arrow">→</span>
               </div>
             </div>
           </div>
-        </div>
+        </template>
 
-        <h2 class="grid-heading">Open challenges</h2>
-        <div v-if="challenges.length === 0" class="section empty">
-          No open challenges right now. Check back later.
-        </div>
-
-        <div v-else class="challenge-grid">
-          <div v-for="ch in challenges" :key="ch.id" class="challenge-card">
-            <div class="card-top">
-              <RouterLink :to="`/challenges/${ch.id}`" class="card-title link">{{ ch.title }}</RouterLink>
-              <span class="status-badge" :class="ch.status">{{ ch.status }}</span>
+        <!-- Student view -->
+        <template v-else>
+          <div v-if="myApps.length" class="section my-apps">
+            <h2>My applications</h2>
+            <div class="app-list">
+              <div v-for="app in myApps" :key="app.id" class="app-row">
+                <div class="app-info">
+                  <RouterLink v-if="app.challenge?.id" :to="`/challenges/${app.challenge.id}`" class="app-title-link">
+                    {{ app.challenge?.title ?? 'Challenge' }}
+                  </RouterLink>
+                  <strong v-else>{{ app.challenge?.title ?? 'Challenge' }}</strong>
+                  <span class="muted">
+                    {{ app.challenge?.company?.name ?? '' }}
+                    · applied {{ app.submitted_at ? formatDate(app.submitted_at) : '' }}
+                  </span>
+                </div>
+                <div class="app-right">
+                  <span class="app-status" :class="statusClass(app.status)">{{ statusLabel(app.status) }}</span>
+                  <RouterLink
+                    v-if="['approved', 'active', 'completed'].includes(app.status)"
+                    :to="`/projects/${app.id}`"
+                    class="project-link"
+                  >
+                    Open project →
+                  </RouterLink>
+                </div>
+              </div>
             </div>
-            <div class="card-meta">
-              <span v-if="ch.budget">💶 {{ formatBudget(ch.budget) }} €</span>
-              <span v-else>Budget not specified</span>
-            </div>
-            <span v-if="appliedStatus(ch.id)" class="app-status" :class="statusClass(appliedStatus(ch.id)!)">
-              {{ statusLabel(appliedStatus(ch.id)!) }}
-            </span>
-            <button v-else @click="openApply(ch)" class="btn-primary">View &amp; apply</button>
           </div>
-        </div>
+
+          <h2 class="grid-heading">Open challenges</h2>
+          <div v-if="challenges.length === 0" class="section empty">
+            No open challenges right now. Check back later.
+          </div>
+          <div v-else class="challenge-grid">
+            <div v-for="ch in challenges" :key="ch.id" class="challenge-card">
+              <div class="card-top">
+                <RouterLink :to="`/challenges/${ch.id}`" class="card-title link">{{ ch.title }}</RouterLink>
+                <span class="status-badge" :class="ch.status">{{ ch.status }}</span>
+              </div>
+              <div class="card-meta">
+                <span v-if="ch.budget">💶 {{ formatBudget(ch.budget) }} €</span>
+                <span v-else>Budget not specified</span>
+              </div>
+              <span v-if="appliedStatus(ch.id)" class="app-status" :class="statusClass(appliedStatus(ch.id)!)">
+                {{ statusLabel(appliedStatus(ch.id)!) }}
+              </span>
+              <button v-else @click="openApply(ch)" class="btn-primary">View &amp; apply</button>
+            </div>
+          </div>
+        </template>
       </template>
 
       <!-- Apply modal -->
@@ -101,15 +121,98 @@
           </template>
         </div>
       </div>
+      <!-- Create challenge modal -->
+<div v-if="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false">
+  <div class="modal">
+    <h2>New Challenge</h2>
+    <div class="field">
+      <label>Title *</label>
+      <input v-model="createForm.title" type="text" placeholder="e.g. Mobile onboarding app" />
+    </div>
+    <div class="field">
+      <label>Technical specification *</label>
+      <textarea v-model="createForm.technical_spec" rows="4" placeholder="Describe the problem and expected solution…"></textarea>
+    </div>
+    <div class="field">
+      <label>Budget (EUR)</label>
+      <input v-model.number="createForm.budget" type="number" min="0" placeholder="5000" />
+    </div>
+    <div class="field">
+      <label>Call *</label>
+      <select v-model="createForm.call_id" class="select-field">
+        <option value="" disabled>-- Select call --</option>
+        <option v-for="c in availableCalls" :key="c.id" :value="c.id">{{ c.title }}</option>
+      </select>
+    </div>
+    <p v-if="createError" class="error">{{ createError }}</p>
+    <div class="modal-actions">
+      <button @click="showCreateModal = false" class="btn-secondary">Cancel</button>
+      <button @click="handleCreateChallenge" :disabled="creating" class="btn-primary">
+        {{ creating ? 'Creating…' : 'Create Challenge' }}
+      </button>
+    </div>
+  </div>
+</div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { challengesApi, challengeApplicationsApi } from '../api/challenges'
 import type { Application, Challenge } from '../types'
 import AppLayout from '../components/AppLayout.vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { programsApi } from '../api/programs'
+
+const showCreateModal = ref(false)
+const creating = ref(false)
+const createError = ref<string | null>(null)
+const availableCalls = ref<any[]>([])
+const createForm = ref({ title: '', technical_spec: '', budget: null as number | null, call_id: '' })
+
+async function openCreateChallenge() {
+  createForm.value = { title: '', technical_spec: '', budget: null, call_id: '' }
+  createError.value = null
+  showCreateModal.value = true
+  try {
+    const res = await programsApi.listProgramB()
+    if (res.programs.length > 0) {
+      const callsRes = await programsApi.callsFor(res.programs[0]!.id)
+      availableCalls.value = callsRes.calls ?? []
+    }
+  } catch {
+    availableCalls.value = []
+  }
+}
+
+async function handleCreateChallenge() {
+  if (!createForm.value.title || !createForm.value.technical_spec) {
+    createError.value = 'Title and specification are required.'
+    return
+  }
+  creating.value = true
+  createError.value = null
+  try {
+    await challengesApi.create({
+      title: createForm.value.title,
+      technical_spec: createForm.value.technical_spec,
+      call_id: createForm.value.call_id || undefined,
+      budget: createForm.value.budget,
+    })
+    showCreateModal.value = false
+    await load()
+  } catch (e: any) {
+    createError.value = e.response?.data?.message ?? 'Failed to create challenge.'
+  } finally {
+    creating.value = false
+  }
+}
+
+const router = useRouter()
+const authStore = useAuthStore()
+const isCompany = computed(() => authStore.user?.account_type === 'company_contact')
 
 const loading = ref(true)
 const challenges = ref<Challenge[]>([])
@@ -228,10 +331,38 @@ async function handleApply() {
 
 .challenges-page { max-width: 900px; }
 .loading { color: #8892a4; }
-
+.challenge-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.challenge-row {
+  background: white; border-radius: 12px; padding: 1rem 1.25rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer;
+  border: 1px solid transparent; transition: all 0.15s ease;
+}
+.challenge-row:hover { border-color: #6ee7b7; transform: translateX(3px); }
+.challenge-row-main { display: flex; flex-direction: column; gap: 0.2rem; }
+.challenge-row-main strong { font-size: 0.95rem; color: #0f1117; }
+.challenge-row-right { display: flex; align-items: center; gap: 1rem; }
+.candidates-count { font-size: 0.8rem; color: #8892a4; }
+.arrow { color: #8892a4; }
+.select-field {
+  width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #e5e7eb;
+  border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
+}
+input, textarea {
+  width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #e5e7eb;
+  border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; font-family: inherit;
+}
+input:focus, textarea:focus { outline: none; border-color: #6ee7b7; }
+select {
+  width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #e5e7eb;
+  border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
+  background: white; cursor: pointer;
+}
+select:focus { outline: none; border-color: #6ee7b7; }
 .page-header {
   display: flex;
-  align-items: flex-start;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
   padding: 0 0 2rem 0;
   border-bottom: 1px solid #e5e7eb;

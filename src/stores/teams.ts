@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { teamsApi } from '../api/program-b/teams.ts'
+import { teamsApi } from '../api/teams'
 import type { Team } from '@/types'
+import { useAuthStore } from './auth'
 
 export const useTeamsStore = defineStore('teams', () => {
   const teams = ref<Team[]>([])
@@ -10,6 +11,7 @@ export const useTeamsStore = defineStore('teams', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const inviteError = ref<string | null>(null) // Специально для ошибок ввода инвайт-кода
+  const authStore = useAuthStore()
 
   async function fetchTeams() {
     loading.value = true
@@ -85,7 +87,7 @@ export const useTeamsStore = defineStore('teams', () => {
     error.value = null
     try {
       await teamsApi.removeMember(teamId, userId)
-      if (currentTeam.value) {
+      if (currentTeam.value && currentTeam.value.members) {
         currentTeam.value.members = currentTeam.value.members.filter((m) => m.id !== userId)
       }
     } catch (e: any) {
@@ -99,9 +101,11 @@ export const useTeamsStore = defineStore('teams', () => {
     loading.value = true
     error.value = null
     try {
-      await teamsApi.leave(teamId)
-      currentTeam.value = null // Очищаем состояние текущей команды
-      await fetchTeams()       // Обновляем список команд на главной странице
+      const userId = authStore.user?.id
+      if (!userId) throw new Error('Not authenticated')
+      await teamsApi.removeMember(teamId, userId)
+      currentTeam.value = null
+      await fetchTeams()
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Chyba pri opúšťaní tímu.'
       throw e

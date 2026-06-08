@@ -12,56 +12,42 @@
           <span>Dashboard</span>
         </RouterLink>
 
+        <!-- Program A -->
+        <RouterLink to="/applications" class="nav-item">
+          <span class="nav-icon">◎</span>
+          <span>Program A</span>
+        </RouterLink>
+
+        <!-- Program B -->
+        <RouterLink to="/challenges" class="nav-item">
+          <span class="nav-icon">★</span>
+          <span>Program B</span>
+        </RouterLink>
+
+
+        <!-- Student only -->
         <RouterLink v-if="isStudent" :to="teamLink" class="nav-item">
           <span class="nav-icon">◈</span>
           <span>My Team</span>
         </RouterLink>
 
-        <RouterLink v-if="isAdmin" to="/teams" class="nav-item">
-          <span class="nav-icon">◈</span>
-          <span>Teams</span>
-        </RouterLink>
-
-        <RouterLink v-if="isStudent" to="/applications" class="nav-item">
-          <span class="nav-icon">◎</span>
-          <span>Applications</span>
-        </RouterLink>
-
-        <RouterLink v-if="isStudent" to="/challenges" class="nav-item">
-          <span class="nav-icon">◆</span>
-          <span>Challenges</span>
-        </RouterLink>
-
-        <RouterLink v-if="isStudent" to="/applications-b" class="nav-item">
-          <span class="nav-icon">★</span>
-          <span>Program B</span>
-        </RouterLink>
-
-        <RouterLink v-if="isAdmin" to="/admin" class="nav-item">
-          <span class="nav-icon">★</span>
-          <span>Admin</span>
-        </RouterLink>
-
+        <!-- Company only -->
         <RouterLink v-if="isCompany" to="/company" class="nav-item">
           <span class="nav-icon">⌂</span>
           <span>Company</span>
         </RouterLink>
 
-        <RouterLink v-if="isCompany" to="/applications" class="nav-item">
-          <span class="nav-icon">◎</span>
-          <span>Applications</span>
-        </RouterLink>
-
+        <!-- Mentor only -->
         <RouterLink v-if="isMentor" to="/mentees" class="nav-item">
           <span class="nav-icon">◉</span>
           <span>Mentees</span>
         </RouterLink>
 
-        <RouterLink v-if="isAdmin" to="/applications" class="nav-item">
-          <span class="nav-icon">◎</span>
-          <span>Applications</span>
+        <!-- Admin only -->
+        <RouterLink v-if="isAdmin" to="/teams" class="nav-item">
+          <span class="nav-icon">◈</span>
+          <span>Teams</span>
         </RouterLink>
-
         <RouterLink
           v-if="isAdmin"
           to="/admin"
@@ -70,6 +56,10 @@
         >
           <span class="nav-icon">★</span>
           <span>Admin</span>
+        </RouterLink>
+        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
+          <span class="nav-icon">◷</span>
+          <span>Activity Log</span>
         </RouterLink>
       </nav>
 

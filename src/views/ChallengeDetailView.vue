@@ -95,9 +95,9 @@
             >
               🚀 Publish challenge
             </button>
-            <div class="status-set">
+            <div v-if="challenge.status !== 'draft'" class="status-set">
               <select v-model="targetStatus">
-                <option v-for="s in STATUSES" :key="s" :value="s">{{ statusLabel(s) }}</option>
+                <option v-for="s in STATUSES.filter(s => s !== 'draft')" :key="s" :value="s">{{ statusLabel(s) }}</option>
               </select>
               <button @click="changeStatus(targetStatus)" class="btn-light" :disabled="saving || targetStatus === challenge.status">
                 Set status
@@ -156,7 +156,10 @@
           <div v-else class="cand-list">
             <div v-for="app in candidates" :key="app.id" class="cand-row" :class="{ chosen: app.status === 'approved' }">
               <div class="cand-info">
-                <strong>{{ app.team?.name ?? 'Team' }}</strong>
+                <strong
+                  class="team-link"
+                  @click.stop="router.push(`/teams/${app.team?.id}`)"
+                >{{ app.team?.name ?? 'Team' }}</strong>
                 <span class="muted">{{ app.team?.members?.length ?? 0 }} member(s) · {{ appStatusLabel(app.status) }}</span>
                 <p v-if="app.motivation_letter" class="cand-letter">{{ app.motivation_letter }}</p>
               </div>
@@ -414,6 +417,9 @@ onMounted(load)
   font-family: 'DM Sans', sans-serif;
 }
 
+.team-link { cursor: pointer; }
+.team-link:hover { color: #16a34a; text-decoration: underline; }
+
 .back-btn {
   background: none;
   border: none;
@@ -515,7 +521,9 @@ onMounted(load)
 .hint { color: #8892a4; font-size: 0.88rem; margin: 0 0 1rem 0; }
 .inline-error { color: #ef4444; font-size: 0.85rem; margin: 0; }
 
-.status-actions { display: flex; flex-direction: column; gap: 0.9rem; }
+.status-actions .btn-primary {
+  align-self: flex-start;
+}
 .status-set { display: flex; gap: 0.6rem; align-items: center; }
 
 .count-pill {
