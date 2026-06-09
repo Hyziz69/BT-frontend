@@ -11,7 +11,7 @@ export interface User {
     | 'nti_admin'
     | 'superadmin'
     | 'evaluator'
-  status: 'active' | 'pending' | 'suspended'
+  status: 'active' | 'pending' | 'suspended' | 'pending_deletion'
   company_id?: string | null
   company_role?: CompanyRole | null
   profile?: StudentProfile

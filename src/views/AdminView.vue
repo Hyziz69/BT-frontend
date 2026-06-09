@@ -5,9 +5,7 @@
         <div>
           <p class="eyebrow">Administration</p>
           <h1>Admin control center</h1>
-          <p>
-            Manage platform users, time chapters, programs, applications and mentor work.
-          </p>
+          <p>Manage platform users, time chapters, programs, applications and mentor work.</p>
         </div>
 
         <button class="btn dark" type="button" :disabled="loading" @click="loadAll">
@@ -16,9 +14,20 @@
       </header>
 
       <nav class="admin-tabs">
-        <RouterLink to="/admin" class="tab active">★ Admin Panel</RouterLink>
-        <RouterLink to="/admin/activity" class="tab">◷ Activity Log</RouterLink>
-        <RouterLink to="/admin/reports" class="tab">▣ Reports</RouterLink>
+        <RouterLink to="/admin" class="tab active">
+          <span class="tab-icon">&#9733;</span>
+          Admin Panel
+        </RouterLink>
+
+        <RouterLink to="/admin/activity" class="tab">
+          <span class="tab-icon">&#8857;</span>
+          Activity Log
+        </RouterLink>
+
+        <RouterLink to="/admin/reports" class="tab">
+          <span class="tab-icon">&#9635;</span>
+          Reports
+        </RouterLink>
       </nav>
 
       <div v-if="accessDenied" class="empty">
@@ -36,7 +45,8 @@
 
         <section class="overview-panel">
           <div class="overview-main">
-            <span class="overview-icon">◎</span>
+            <span class="overview-icon">&#9678;</span>
+
             <div>
               <h2>Platform status</h2>
               <p>
@@ -58,7 +68,7 @@
         <section class="kpi-grid">
           <button class="kpi-card clickable" type="button" @click="scrollTo('users')">
             <span class="kpi-top">
-              <span class="kpi-icon green">●</span>
+              <span class="kpi-icon green">&#9679;</span>
               <span>Users</span>
             </span>
             <strong>{{ stat('users_count') }}</strong>
@@ -67,7 +77,7 @@
 
           <button class="kpi-card clickable" type="button" @click="scrollTo('applications')">
             <span class="kpi-top">
-              <span class="kpi-icon violet">✦</span>
+              <span class="kpi-icon violet">&#10022;</span>
               <span>Applications</span>
             </span>
             <strong>{{ stat('total_applications') }}</strong>
@@ -76,7 +86,7 @@
 
           <button class="kpi-card clickable" type="button" @click="scrollTo('calls')">
             <span class="kpi-top">
-              <span class="kpi-icon amber">◎</span>
+              <span class="kpi-icon amber">&#8857;</span>
               <span>Calls</span>
             </span>
             <strong>{{ stat('total_calls') }}</strong>
@@ -85,7 +95,7 @@
 
           <button class="kpi-card clickable" type="button" @click="scrollTo('mentors')">
             <span class="kpi-top">
-              <span class="kpi-icon cyan">★</span>
+              <span class="kpi-icon cyan">&#9733;</span>
               <span>Mentors</span>
             </span>
             <strong>{{ mentors.length }}</strong>
@@ -175,13 +185,15 @@
                   <td>
                     <strong>{{ user.first_name }} {{ user.last_name }}</strong>
                   </td>
+
                   <td>{{ user.email }}</td>
+
                   <td>
                     <select
                       class="small-select"
                       :value="user.account_type"
                       :disabled="saving"
-                      @change="changeRole(user, ($event.target as HTMLSelectElement).value)"
+                      @change="handleRoleChange(user, $event)"
                     >
                       <option value="student">Student</option>
                       <option value="mentor">Mentor</option>
@@ -191,12 +203,15 @@
                       <option value="superadmin">Super Admin</option>
                     </select>
                   </td>
+
                   <td>
                     <span class="badge" :class="statusClass(user.status)">
-                      {{ user.status }}
+                      {{ cleanStatus(user.status) }}
                     </span>
                   </td>
+
                   <td>{{ formatDate(user.created_at) }}</td>
+
                   <td>
                     <div class="actions">
                       <button
@@ -258,7 +273,7 @@
                 <strong>{{ mentor.first_name }} {{ mentor.last_name }}</strong>
                 <span>{{ mentor.email }}</span>
                 <span class="badge" :class="statusClass(mentor.status)">
-                  {{ mentor.status }}
+                  {{ cleanStatus(mentor.status) }}
                 </span>
               </div>
             </div>
@@ -332,9 +347,10 @@
               <div>
                 <h3>{{ program.name }}</h3>
                 <p>{{ program.description || 'No description' }}</p>
+
                 <div class="chips">
-                  <span>{{ program.type }}</span>
-                  <span>{{ program.min_team_size }}–{{ program.max_team_size }} members</span>
+                  <span>{{ cleanStatus(program.type) }}</span>
+                  <span>{{ program.min_team_size }}-{{ program.max_team_size }} members</span>
                   <span>{{ program.is_active ? 'active' : 'inactive' }}</span>
                 </div>
               </div>
@@ -371,7 +387,7 @@
                 <select v-model="callForm.program_id">
                   <option value="">Choose program</option>
                   <option v-for="program in programs" :key="program.id" :value="program.id">
-                    {{ program.name }} / {{ program.type }}
+                    {{ program.name }} / {{ cleanStatus(program.type) }}
                   </option>
                 </select>
               </label>
@@ -412,10 +428,11 @@
               <div>
                 <h3>{{ call.title }}</h3>
                 <p>{{ call.description || 'No description' }}</p>
+
                 <div class="chips">
                   <span>{{ call.program?.name || 'Program' }}</span>
-                  <span>{{ call.status }}</span>
-                  <span>{{ formatDate(call.opens_at) }} → {{ formatDate(call.closes_at) }}</span>
+                  <span>{{ cleanStatus(call.status) }}</span>
+                  <span>{{ formatDate(call.opens_at) }} > {{ formatDate(call.closes_at) }}</span>
                 </div>
               </div>
 
@@ -452,7 +469,7 @@
           <div class="section-title">
             <div>
               <h2>Applications</h2>
-              <p>Review teams and assign mentors.</p>
+              <p>Review teams, budgets, statuses and mentor assignment.</p>
             </div>
             <span class="counter">{{ filteredApplications.length }} shown</span>
           </div>
@@ -463,6 +480,8 @@
             <select v-model="applicationStatusFilter">
               <option value="">All statuses</option>
               <option value="submitted">Submitted</option>
+              <option value="formally_verified">Formally verified</option>
+              <option value="in_evaluation">In evaluation</option>
               <option value="approved">Approved</option>
               <option value="active">Active</option>
               <option value="completed">Completed</option>
@@ -471,7 +490,7 @@
           </div>
 
           <div class="table-wrap">
-            <table>
+            <table class="applications-table">
               <thead>
                 <tr>
                   <th>Team</th>
@@ -485,26 +504,58 @@
 
               <tbody>
                 <tr v-for="application in filteredApplications" :key="application.id">
-                  <td>
+                  <td class="team-cell">
                     <strong>{{ application.team?.name || 'Team' }}</strong>
                   </td>
-                  <td>
+
+                  <td class="project-cell">
                     {{ application.challenge?.title || application.summary || 'Application' }}
                   </td>
-                  <td>
+
+                  <td class="call-cell">
                     {{ application.call?.title || 'Call' }}
                   </td>
+
                   <td>
-                    <span class="badge" :class="applicationStatusClass(application.status)">
-                      {{ application.status }}
-                    </span>
+                    <div class="status-editor">
+                      <span class="badge" :class="applicationStatusClass(application.status)">
+                        {{ cleanStatus(application.status) }}
+                      </span>
+
+                      <div class="status-actions">
+                        <select v-model="statusSelects[application.id]" class="small-select status-select">
+                          <option value="">Change status</option>
+                          <option value="submitted">Submitted</option>
+                          <option value="formally_verified">Formally verified</option>
+                          <option value="in_evaluation">In evaluation</option>
+                          <option value="pending_supplement">Pending supplement</option>
+                          <option value="approved">Approved</option>
+                          <option value="onboarding">Onboarding</option>
+                          <option value="active">Active</option>
+                          <option value="paused">Paused</option>
+                          <option value="completed">Completed</option>
+                          <option value="rejected">Rejected</option>
+                        </select>
+
+                        <button
+                          class="mini edit"
+                          type="button"
+                          :disabled="saving || !statusSelects[application.id]"
+                          @click="changeApplicationStatus(application)"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
                   </td>
-                  <td>
-                    {{ application.requested_budget ? `${application.requested_budget} €` : '—' }}
+
+                  <td class="budget-cell">
+                    {{ formatBudget(application.requested_budget) }}
                   </td>
+
                   <td>
                     <div class="assign">
-                      <select v-model="mentorSelects[application.id]" class="small-select">
+                      <select v-model="mentorSelects[application.id]" class="small-select mentor-select">
                         <option value="">Choose mentor</option>
                         <option v-for="mentor in activeMentors" :key="mentor.id" :value="mentor.id">
                           {{ mentor.first_name }} {{ mentor.last_name }}
@@ -543,6 +594,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
+import api from '../api/axios'
 import { useAuthStore } from '../stores/auth'
 import {
   adminApi,
@@ -587,6 +639,7 @@ const callFormOpen = ref(false)
 const editingCallId = ref<string | null>(null)
 
 const mentorSelects = reactive<Record<string, string>>({})
+const statusSelects = reactive<Record<string, string>>({})
 
 const programForm = reactive({
   type: 'program_a',
@@ -620,6 +673,7 @@ const filteredUsers = computed(() => {
 
   return users.value.filter((user) => {
     const name = `${user.first_name} ${user.last_name}`.toLowerCase()
+
     const matchesSearch =
       !search ||
       name.includes(search) ||
@@ -696,6 +750,7 @@ async function loadAll() {
         ''
 
       mentorSelects[application.id] = mentorId
+      statusSelects[application.id] = ''
     }
   } catch (e: any) {
     if (e?.response?.status === 403) {
@@ -751,6 +806,16 @@ async function deleteUser(user: AdminUser) {
     successMessage.value = 'User deleted.'
     await loadAll()
   })
+}
+
+function handleRoleChange(user: AdminUser, event: Event) {
+  const target = event.target as HTMLSelectElement | null
+
+  if (!target) {
+    return
+  }
+
+  changeRole(user, target.value)
 }
 
 async function changeRole(user: AdminUser, accountType: string) {
@@ -887,6 +952,24 @@ async function closeCall(id: string) {
   })
 }
 
+async function changeApplicationStatus(application: AdminApplication) {
+  const status = statusSelects[application.id]
+
+  if (!status || status === application.status) {
+    statusSelects[application.id] = ''
+    return
+  }
+
+  await runAction(async () => {
+    await api.patch(`/program-a/applications/${application.id}/transition`, {
+      status,
+    })
+
+    successMessage.value = 'Application status updated.'
+    await loadAll()
+  })
+}
+
 async function assignMentor(application: AdminApplication) {
   const mentorId = mentorSelects[application.id]
 
@@ -937,7 +1020,7 @@ function statusClass(status: string): string {
 
 function applicationStatusClass(status: string): string {
   if (['approved', 'active', 'completed'].includes(status)) return 'green'
-  if (['submitted', 'formally_verified', 'in_evaluation', 'pending_supplement'].includes(status)) {
+  if (['submitted', 'formally_verified', 'in_evaluation', 'pending_supplement', 'onboarding', 'paused'].includes(status)) {
     return 'amber'
   }
   if (status === 'rejected') return 'red'
@@ -945,8 +1028,28 @@ function applicationStatusClass(status: string): string {
   return 'grey'
 }
 
+function cleanStatus(status?: string | null): string {
+  if (!status) return '-'
+
+  return status.replace(/_/g, ' ')
+}
+
+function formatBudget(value?: string | number | null): string {
+  if (value === null || value === undefined || value === '') {
+    return '-'
+  }
+
+  const numberValue = Number(value)
+
+  if (Number.isNaN(numberValue)) {
+    return '-'
+  }
+
+  return `${numberValue.toLocaleString('sk-SK')} EUR`
+}
+
 function formatDate(value?: string | null): string {
-  if (!value) return '—'
+  if (!value) return '-'
 
   return new Date(value).toLocaleDateString('sk-SK')
 }
@@ -978,6 +1081,11 @@ function toLocalInput(value?: string | null): string {
   padding: 1.5rem 0 1.2rem;
   border-bottom: 1px solid #dbe3eb;
   margin-bottom: 1rem;
+}
+
+.hero > .btn {
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .eyebrow {
@@ -1037,6 +1145,16 @@ function toLocalInput(value?: string | null): string {
   color: #6ee7b7;
   border-color: #0f172a;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+}
+
+.tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  font-size: 0.82rem;
+  line-height: 1;
 }
 
 .overview-panel,
@@ -1127,6 +1245,40 @@ function toLocalInput(value?: string | null): string {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 }
 
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 155px;
+}
+
+.kpi-card::after {
+  content: "";
+  position: absolute;
+  top: -34px;
+  right: -34px;
+  width: 105px;
+  height: 105px;
+  border-radius: 999px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.kpi-card:nth-child(1)::after {
+  background: #10b981;
+}
+
+.kpi-card:nth-child(2)::after {
+  background: #8b5cf6;
+}
+
+.kpi-card:nth-child(3)::after {
+  background: #f59e0b;
+}
+
+.kpi-card:nth-child(4)::after {
+  background: #06b6d4;
+}
+
 .kpi-card.clickable,
 .work-card {
   cursor: pointer;
@@ -1137,6 +1289,16 @@ function toLocalInput(value?: string | null): string {
 .work-card:hover {
   transform: translateY(-2px);
   border-color: #6ee7b7;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.kpi-card:focus,
+.kpi-card:focus-visible,
+.work-card:focus,
+.work-card:focus-visible {
+  outline: none;
+  border-color: #6ee7b7;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .kpi-top {
@@ -1159,6 +1321,14 @@ function toLocalInput(value?: string | null): string {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.kpi-icon,
+.kpi-top,
+.kpi-card strong,
+.kpi-card small {
+  position: relative;
+  z-index: 1;
 }
 
 .kpi-card strong,
@@ -1306,6 +1476,29 @@ th {
   letter-spacing: 0.08em;
 }
 
+.applications-table {
+  min-width: 1100px;
+}
+
+.team-cell {
+  min-width: 130px;
+}
+
+.project-cell {
+  min-width: 160px;
+}
+
+.call-cell {
+  min-width: 150px;
+}
+
+.budget-cell {
+  min-width: 120px;
+  white-space: nowrap;
+  color: #0f172a;
+  font-weight: 800;
+}
+
 .badge {
   display: inline-flex;
   border-radius: 999px;
@@ -1346,6 +1539,28 @@ th {
   gap: 0.45rem;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.status-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 190px;
+}
+
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+}
+
+.status-select {
+  min-width: 155px;
+}
+
+.mentor-select {
+  min-width: 170px;
 }
 
 .current-mentor {

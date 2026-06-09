@@ -26,8 +26,8 @@
         <div class="section">
           <div class="section-header">
             <h2>Members</h2>
-            <button @click="copyInviteCode" class="btn-primary">
-              + Invite Code: {{teamsStore.currentTeam.invite_code}}
+            <button v-if="isLeader" @click="copyInviteCode" class="btn-secondary">
+              Invite code: {{ teamsStore.currentTeam?.invite_code }}
             </button>
             <button v-if="isLeader" @click="handleDeleteTeam" class="btn-danger">
               Delete Team
