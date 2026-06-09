@@ -80,7 +80,10 @@
               <span v-if="appliedStatus(ch.id)" class="app-status" :class="statusClass(appliedStatus(ch.id)!)">
                 {{ statusLabel(appliedStatus(ch.id)!) }}
               </span>
-              <button v-else @click="openApply(ch)" class="btn-primary">View &amp; apply</button>
+              <template v-else>
+                <button v-if="isStudent" @click="openApply(ch)" class="btn-primary">View &amp; apply</button>
+                <button v-else @click="openApply(ch)" class="btn-primary">View details</button>
+              </template>
             </div>
           </div>
         </template>
@@ -98,7 +101,7 @@
               Budget: <strong>{{ formatBudget(activeChallenge.budget) }} €</strong>
             </p>
 
-            <template v-if="!applySuccess">
+            <template v-if="!applySuccess && isStudent">
               <div class="field">
                 <label>Motivation letter</label>
                 <textarea v-model="applyForm.motivation_letter" rows="3" placeholder="Why is your team a great fit?"></textarea>
@@ -114,7 +117,7 @@
 
             <div class="modal-actions">
               <button @click="closeApply" class="btn-secondary">{{ applySuccess ? 'Close' : 'Cancel' }}</button>
-              <button v-if="!applySuccess" @click="handleApply" :disabled="applying" class="btn-primary">
+              <button v-if="!applySuccess && isStudent" @click="handleApply" :disabled="applying" class="btn-primary">
                 {{ applying ? 'Submitting…' : 'Submit application' }}
               </button>
             </div>
@@ -163,8 +166,10 @@ import { challengesApi, challengeApplicationsApi } from '../api/challenges'
 import type { Application, Challenge } from '../types'
 import AppLayout from '../components/AppLayout.vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import { programsApi } from '../api/programs'
+import { useAuthStore } from '../stores/auth'
+const authStore = useAuthStore()
+const isStudent = computed(() => authStore.user?.account_type === 'student')
 
 const showCreateModal = ref(false)
 const creating = ref(false)
@@ -211,7 +216,6 @@ async function handleCreateChallenge() {
 }
 
 const router = useRouter()
-const authStore = useAuthStore()
 const isCompany = computed(() => authStore.user?.account_type === 'company_contact')
 
 const loading = ref(true)

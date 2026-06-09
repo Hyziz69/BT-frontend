@@ -164,11 +164,11 @@ const newTeam = ref({ name: '' })
 const allTeams = ref<any[]>([])
 
 const programATeams = computed(() =>
-  allTeams.value.filter(t => t.program_type === 'program_a' || !t.program_type)
+  allTeams.value.filter(t => !t.program_b_team)
 )
 
 const programBTeams = computed(() =>
-  allTeams.value.filter(t => t.program_type === 'program_b')
+  allTeams.value.filter(t => t.program_b_team)
 )
 
 onMounted(async () => {
