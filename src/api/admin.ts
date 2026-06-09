@@ -1,88 +1,73 @@
 import api from './axios'
+import type { Application, Call, Program } from '../types'
 
-export interface AdminUser {
+export type AdminUser = {
   id: string
   first_name: string
   last_name: string
   email: string
   account_type: string
   status: string
-  gdpr_consent: boolean
+  gdpr_consent?: boolean
   created_at: string
+  approved_at?: string | null
 }
 
-export interface AdminDashboardStats {
+export type AdminDashboardStats = {
   users_count: number
   active_users_count: number
   pending_users_count: number
   rejected_users_count: number
   students_count: number
   admins_count: number
+
   mentors_count: number
+  active_mentors_count: number
+  available_mentors_count: number
+
+  teams_count: number
+  teams_with_active_projects_count: number
+
   total_programs: number
   active_programs: number
+
   total_calls: number
   open_calls: number
+  evaluating_calls: number
   closed_calls: number
   draft_calls: number
+
   total_applications: number
+  applications_waiting_count: number
   approved_applications: number
+  active_projects_count: number
+  completed_applications: number
   rejected_applications: number
   pending_applications: number
+
+  total_users?: number
+  pending_users?: number
+  active_users?: number
+  rejected_users?: number
+  total_mentors?: number
 }
 
-export interface AdminProgram {
-  id: string
-  type: 'program_a' | 'program_b'
-  name: string
-  description: string | null
-  min_team_size: number
-  max_team_size: number
-  is_active: boolean
-  calls_count?: number
-}
-
-export interface AdminCall {
-  id: string
-  program_id: string
-  title: string
-  description: string | null
-  status: 'draft' | 'open' | 'evaluating' | 'closed'
-  opens_at: string | null
-  closes_at: string | null
-  applications_count?: number
-  program?: {
+export type AdminApplication = Application & {
+  latest_mentorship?: {
     id: string
-    type: string
-    name: string
-  }
-}
-
-export interface AdminApplication {
-  id: string
-  status: string
-  submitted_at: string | null
-  team?: {
-    id: string
-    name: string
-  }
-  call?: {
-    id: string
-    title: string
-    program?: {
-      id: string
-      name: string
-      type: string
-    }
-  }
+    mentor_id: string
+    mentor?: AdminUser
+    started_at: string
+    ended_at?: string | null
+    notes?: string | null
+  } | null
   mentorships?: Array<{
     id: string
-    mentor?: {
-      id: string
-      first_name: string
-      last_name: string
-      email: string
-    }
+    mentor_id: string
+    mentor?: AdminUser
+    started_at: string
+    ended_at?: string | null
+    notes?: string | null
   }>
 }
 
@@ -98,7 +83,7 @@ export interface AdminAuditEvent {
   id: string
   actor_id: string | null
   action: string
-  entity_type: string
+  entity_type: string | null
   entity_id: string | null
   payload: {
     label?: string | null
@@ -127,7 +112,7 @@ export interface AdminAuditEventsResponse {
 
 export interface AdminAuditEventFilters {
   actions: string[]
-  entity_types: Array<{
+  entity_types: Array<string | {
     value: string
     label: string
   }>
@@ -158,43 +143,45 @@ export const adminApi = {
     return api.get('/admin/audit-events/filters').then((r) => r.data)
   },
 
-  getUsers(params?: Record<string, string>) {
-    return api.get('/admin/users', { params }).then((r) => r.data as AdminUser[])
+  getUsers(params?: Record<string, string>): Promise<AdminUser[]> {
+    return api.get('/admin/users', { params }).then((r) => r.data)
   },
 
   approveUser(id: string) {
     return api.patch(`/admin/users/${id}/approve`).then((r) => r.data)
   },
 
-  updateUser(id: string, payload: { account_type?: string; status?: string }) {
-    return api.patch(`/admin/users/${id}`, payload).then((r) => r.data)
-  },
-
   rejectUser(id: string) {
     return api.patch(`/admin/users/${id}/reject`).then((r) => r.data)
-  },
-
-  transitionApplication(id: string, status: string) {
-    return api.patch(`/program-a/applications/${id}/transition`, { status }).then(r => r.data)
   },
 
   deleteUser(id: string) {
     return api.delete(`/admin/users/${id}`).then((r) => r.data)
   },
 
-  getPrograms(): Promise<AdminProgram[]> {
+  updateUserRole(id: string, accountType: string) {
+    return api.patch(`/admin/users/${id}`, {
+      account_type: accountType,
+    }).then((r) => r.data)
+  },
+
+  updateUser(id: string, payload: { account_type?: string; status?: string }) {
+    return api.patch(`/admin/users/${id}`, payload).then((r) => r.data)
+  },
+
+  getPrograms(): Promise<Program[]> {
     return api.get('/admin/programs').then((r) => r.data)
   },
 
-  createProgram(payload: Partial<AdminProgram>) {
+  createProgram(payload: Partial<Program>) {
     return api.post('/admin/programs', payload).then((r) => r.data)
   },
 
-  updateProgram(id: string, payload: Partial<AdminProgram>) {
+  updateProgram(id: string, payload: Partial<Program>) {
     return api.patch(`/admin/programs/${id}`, payload).then((r) => r.data)
   },
 
-  getCalls(): Promise<AdminCall[]> {
+  getCalls(): Promise<Call[]> {
     return api.get('/admin/calls').then((r) => r.data)
   },
 
@@ -218,18 +205,15 @@ export const adminApi = {
     return api.get('/admin/applications').then((r) => r.data)
   },
 
+  transitionApplication(id: string, status: string) {
+    return api.patch(`/program-a/applications/${id}/transition`, { status }).then((r) => r.data)
+  },
+
   assignMentor(applicationId: string, mentorId: string, notes?: string) {
     return api
-      .post(`/program-b/applications/${applicationId}/mentorships`, {
+      .patch(`/admin/applications/${applicationId}/assign-mentor`, {
         mentor_id: mentorId,
         notes,
-      })
-      .then((r) => r.data)
-  },
-  endMentorship(applicationId: string, mentorshipId: string, notes?: string) {
-    return api
-      .patch(`/program-b/applications/${applicationId}/mentorships/${mentorshipId}/end`, {
-        notes
       })
       .then((r) => r.data)
   },

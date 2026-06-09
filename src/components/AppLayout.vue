@@ -1,17 +1,12 @@
 <template>
   <div class="app-layout">
     <aside class="sidebar">
-      <div class="sidebar-brand">
+      <RouterLink to="/" class="sidebar-brand">
         <span class="brand-icon">⬡</span>
         <span class="brand-text">NTI Portal</span>
-      </div>
+      </RouterLink>
 
       <nav class="sidebar-nav">
-        <RouterLink to="/" class="nav-item">
-          <span class="nav-icon">⬡</span>
-          <span>Home</span>
-        </RouterLink>
-
         <RouterLink to="/dashboard" class="nav-item">
           <span class="nav-icon">⊞</span>
           <span>Dashboard</span>
@@ -52,6 +47,7 @@
           <span class="nav-icon">◈</span>
           <span>Teams</span>
         </RouterLink>
+
         <RouterLink
           v-if="isAdmin"
           to="/admin"
@@ -60,10 +56,6 @@
         >
           <span class="nav-icon">★</span>
           <span>Admin</span>
-        </RouterLink>
-        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
-          <span class="nav-icon">◷</span>
-          <span>Activity Log</span>
         </RouterLink>
       </nav>
 
@@ -131,10 +123,10 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
-const isEvaluator = computed(() => user.value?.account_type === 'evaluator')
 
 const user = computed(() => authStore.user as any)
 
+const isEvaluator = computed(() => user.value?.account_type === 'evaluator')
 const isStudent = computed(() => user.value?.account_type === 'student')
 const isCompany = computed(() => user.value?.account_type === 'company_contact')
 const isMentor = computed(() => user.value?.account_type === 'mentor')
@@ -241,6 +233,12 @@ html, body {
   gap: 0.75rem;
   padding: 1.75rem 1.5rem;
   border-bottom: 1px solid #1e2130;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.sidebar-brand:hover {
+  background: #1a1f2e;
 }
 
 .brand-icon {

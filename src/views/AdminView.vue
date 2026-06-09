@@ -1,153 +1,169 @@
-<template>
+﻿<template>
   <AppLayout>
-    <div class="admin">
-      <div class="page-header">
-        <div class="header-content">
-          <span class="kicker">Administration</span>
-          <h1 class="page-title">Admin Panel</h1>
-          <p class="page-subtitle">
-            Manage users, programs, calls and mentor assignment from one clean workspace.
+    <div class="admin-page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Administration</p>
+          <h1>Admin control center</h1>
+          <p>
+            Manage platform users, time chapters, programs, applications and mentor work.
           </p>
         </div>
 
-        <div class="header-actions">
-          <button class="btn-primary" @click="loadAll" :disabled="loading || saving">
-            {{ loading ? 'Refreshing...' : 'Refresh' }}
-          </button>
-        </div>
-      </div>
+        <button class="btn dark" type="button" :disabled="loading" @click="loadAll">
+          {{ loading ? 'Refreshing...' : 'Refresh' }}
+        </button>
+      </header>
 
-      <div class="admin-switch">
-        <RouterLink to="/admin" class="switch-link active-switch">
-          <span>★</span>
-          Admin Panel
-        </RouterLink>
-
-        <RouterLink to="/admin/activity" class="switch-link">
-          <span>◷</span>
-          Activity Log
-        </RouterLink>
-
-        <RouterLink to="/admin/reports" class="switch-link">
-          <span>&#9635;</span>
-          Reports
-        </RouterLink>
-      </div>
+      <nav class="admin-tabs">
+        <RouterLink to="/admin" class="tab active">★ Admin Panel</RouterLink>
+        <RouterLink to="/admin/activity" class="tab">◷ Activity Log</RouterLink>
+        <RouterLink to="/admin/reports" class="tab">▣ Reports</RouterLink>
+      </nav>
 
       <div v-if="accessDenied" class="empty">
-        <div class="empty-icon">⛔</div>
-        <h2>403 — Access denied</h2>
-        <p>You do not have enough permissions to access this page.</p>
+        <h2>Access denied</h2>
+        <p>You do not have admin permissions.</p>
       </div>
 
-      <div v-else-if="loading" class="loading">Loading admin data...</div>
+      <div v-else-if="loading" class="loading">
+        Loading admin data...
+      </div>
 
       <template v-else>
-        <p v-if="error" class="banner error">{{ error }}</p>
-        <p v-if="successMessage" class="banner success">{{ successMessage }}</p>
+        <p v-if="error" class="message error">{{ error }}</p>
+        <p v-if="successMessage" class="message success">{{ successMessage }}</p>
 
-        <section v-if="stats" class="overview-section">
-          <div class="section-heading compact">
+        <section class="overview-panel">
+          <div class="overview-main">
+            <span class="overview-icon">◎</span>
             <div>
-              <h2>Admin overview</h2>
-              <p>Navigation cards move you to sections. Info cards show only platform numbers.</p>
+              <h2>Platform status</h2>
+              <p>
+                {{ stat('users_count') }} users,
+                {{ stat('total_applications') }} applications,
+                {{ stat('active_projects_count') }} active projects.
+              </p>
             </div>
           </div>
 
-          <h3 class="overview-group-title">Navigation</h3>
-
-          <div class="stats-grid">
-            <button
-              v-for="card in navigationCards"
-              :key="card.key"
-              type="button"
-              class="stat-card clickable"
-              :class="card.tone"
-              @click="scrollToSection(card.target)"
-            >
-              <div class="stat-top">
-                <span class="stat-icon">{{ card.icon }}</span>
-                <span class="stat-target">{{ card.targetLabel }}</span>
-              </div>
-
-              <h3>{{ card.title }}</h3>
-              <p>{{ card.value }}</p>
-              <small>{{ card.subtitle }}</small>
-
-              <div class="summary-extra">
-                {{ card.info }}
-              </div>
-            </button>
-          </div>
-
-          <h3 class="overview-group-title second">Platform numbers</h3>
-
-          <div class="stats-grid info-grid">
-            <div
-              v-for="card in infoCards"
-              :key="card.key"
-              class="stat-card info-only"
-              :class="card.tone"
-            >
-              <div class="stat-top">
-                <span class="stat-icon">{{ card.icon }}</span>
-                <span class="stat-target muted-target">Overview only</span>
-              </div>
-
-              <h3>{{ card.title }}</h3>
-              <p>{{ card.value }}</p>
-              <small>{{ card.subtitle }}</small>
-
-              <div class="summary-extra">
-                {{ card.info }}
-              </div>
-            </div>
+          <div class="overview-note">
+            <strong>Active project rule</strong>
+            <span>
+              A team/person can join another call only when the previous active project does not overlap by time.
+            </span>
           </div>
         </section>
 
-        <section
-          ref="usersSection"
-          class="card module-card"
-          :class="{ 'section-highlight': activeSection === 'users' }"
-        >
-          <div class="section-heading">
-            <div>
-              <h2>User approvals</h2>
-              <p>Review registered users and manage access.</p>
-            </div>
+        <section class="kpi-grid">
+          <button class="kpi-card clickable" type="button" @click="scrollTo('users')">
+            <span class="kpi-top">
+              <span class="kpi-icon green">●</span>
+              <span>Users</span>
+            </span>
+            <strong>{{ stat('users_count') }}</strong>
+            <small>{{ stat('pending_users_count') }} waiting approval</small>
+          </button>
 
-            <div class="module-counter">
-              <strong>{{ filteredUsers.length }}</strong>
-              <span>shown</span>
+          <button class="kpi-card clickable" type="button" @click="scrollTo('applications')">
+            <span class="kpi-top">
+              <span class="kpi-icon violet">✦</span>
+              <span>Applications</span>
+            </span>
+            <strong>{{ stat('total_applications') }}</strong>
+            <small>{{ stat('applications_waiting_count') }} waiting review</small>
+          </button>
+
+          <button class="kpi-card clickable" type="button" @click="scrollTo('calls')">
+            <span class="kpi-top">
+              <span class="kpi-icon amber">◎</span>
+              <span>Calls</span>
+            </span>
+            <strong>{{ stat('total_calls') }}</strong>
+            <small>{{ stat('open_calls') }} currently open</small>
+          </button>
+
+          <button class="kpi-card clickable" type="button" @click="scrollTo('mentors')">
+            <span class="kpi-top">
+              <span class="kpi-icon cyan">★</span>
+              <span>Mentors</span>
+            </span>
+            <strong>{{ mentors.length }}</strong>
+            <small>{{ activeMentors.length }} active mentors</small>
+          </button>
+        </section>
+
+        <section class="work-grid">
+          <button class="work-card" type="button" @click="scrollTo('programs')">
+            <div>
+              <h3>Programs</h3>
+              <p>Program A / Program B settings and team size limits.</p>
             </div>
+            <strong>{{ stat('active_programs') }}/{{ stat('total_programs') }}</strong>
+          </button>
+
+          <button class="work-card warning" type="button" @click="scrollTo('calls')">
+            <div>
+              <h3>Time chapters</h3>
+              <p>Calls control the time window for applications and project overlap.</p>
+            </div>
+            <strong>{{ stat('open_calls') }}</strong>
+          </button>
+
+          <button class="work-card danger" type="button" @click="scrollTo('applications')">
+            <div>
+              <h3>Busy teams</h3>
+              <p>Teams that should not be assigned to another overlapping project.</p>
+            </div>
+            <strong>{{ stat('teams_with_active_projects_count') }}</strong>
+          </button>
+
+          <div class="work-card done">
+            <div>
+              <h3>Completed</h3>
+              <p>Completed or archived applications do not block future calls.</p>
+            </div>
+            <strong>{{ stat('completed_applications') }}</strong>
+          </div>
+        </section>
+
+        <section ref="usersSection" class="panel">
+          <div class="section-title">
+            <div>
+              <h2>Users</h2>
+              <p>Approve accounts and manage roles.</p>
+            </div>
+            <span class="counter">{{ filteredUsers.length }} shown</span>
           </div>
 
           <div class="filters">
-            <input v-model="userSearch" type="text" placeholder="Search by name or email" />
+            <input v-model="userSearch" type="text" placeholder="Search user..." />
 
             <select v-model="userStatusFilter">
               <option value="">All statuses</option>
               <option value="pending">Pending</option>
-              <option value="active">Approved</option>
+              <option value="active">Active</option>
               <option value="suspended">Rejected</option>
             </select>
 
             <select v-model="userTypeFilter">
-              <option value="">All types</option>
+              <option value="">All roles</option>
               <option value="student">Student</option>
               <option value="mentor">Mentor</option>
-              <option value="company_contact">Company contact</option>
+              <option value="company_contact">Company</option>
+              <option value="evaluator">Evaluator</option>
               <option value="nti_admin">Admin</option>
+              <option value="superadmin">Superadmin</option>
             </select>
           </div>
 
-          <div v-if="filteredUsers.length" class="table-wrap">
+          <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>User</th>
                   <th>Email</th>
-                  <th>Account type</th>
+                  <th>Role</th>
                   <th>Status</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -156,34 +172,37 @@
 
               <tbody>
                 <tr v-for="user in filteredUsers" :key="user.id">
-                  <td>{{ user.first_name }} {{ user.last_name }}</td>
+                  <td>
+                    <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                  </td>
                   <td>{{ user.email }}</td>
                   <td>
-                  <select
-                    :value="user.account_type"
-                    @change="handleRoleChange(user, ($event.target as HTMLSelectElement).value)"
-                    class="role-select"
-                    :disabled="saving"
-                  >
-                    <option value="student">Student</option>
-                    <option value="mentor">Mentor</option>
-                    <option value="company_contact">Company contact</option>
-                    <option value="evaluator">Evaluator</option>
-                    <option value="nti_admin">NTI Admin</option>
-                    <option value="superadmin">Super Admin</option>
-                  </select>
-                </td>
+                    <select
+                      class="small-select"
+                      :value="user.account_type"
+                      :disabled="saving"
+                      @change="changeRole(user, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option value="student">Student</option>
+                      <option value="mentor">Mentor</option>
+                      <option value="company_contact">Company</option>
+                      <option value="evaluator">Evaluator</option>
+                      <option value="nti_admin">NTI Admin</option>
+                      <option value="superadmin">Super Admin</option>
+                    </select>
+                  </td>
                   <td>
-                    <span class="status-badge" :class="statusClass(user.status)">
+                    <span class="badge" :class="statusClass(user.status)">
                       {{ user.status }}
                     </span>
                   </td>
                   <td>{{ formatDate(user.created_at) }}</td>
                   <td>
-                    <div class="user-actions">
+                    <div class="actions">
                       <button
                         v-if="user.status !== 'active'"
-                        class="action-pill approve"
+                        class="mini approve"
+                        type="button"
                         :disabled="saving"
                         @click="approveUser(user.id)"
                       >
@@ -192,7 +211,8 @@
 
                       <button
                         v-if="user.status !== 'suspended'"
-                        class="action-pill reject"
+                        class="mini reject"
+                        type="button"
                         :disabled="saving"
                         @click="rejectUser(user.id)"
                       >
@@ -200,8 +220,9 @@
                       </button>
 
                       <button
-                        class="action-pill delete"
-                        :disabled="saving || isCurrentUser(user)"
+                        class="mini delete"
+                        type="button"
+                        :disabled="saving || user.id === authUserId"
                         @click="deleteUser(user)"
                       >
                         Delete
@@ -209,76 +230,86 @@
                     </div>
                   </td>
                 </tr>
+
+                <tr v-if="!filteredUsers.length">
+                  <td colspan="6" class="muted">No users found.</td>
+                </tr>
               </tbody>
             </table>
           </div>
-
-          <p v-else class="muted">No users found.</p>
         </section>
 
-        <section
-          ref="programsSection"
-          class="card module-card"
-          :class="{ 'section-highlight': activeSection === 'programs' }"
-        >
-          <div class="section-heading">
+        <section ref="mentorsSection" class="panel">
+          <div class="section-title">
             <div>
-              <h2>Programs</h2>
-              <p>Simple list of programs. Create or edit only when needed.</p>
+              <h2>Mentors</h2>
+              <p>People available for application and project support.</p>
             </div>
-
-            <div class="section-actions">
-              <div class="module-counter">
-                <strong>{{ programs.length }}</strong>
-                <span>programs</span>
-              </div>
-
-              <button class="btn-primary" type="button" @click="openProgramCreate">
-                Create program
-              </button>
-            </div>
+            <span class="counter">{{ activeMentors.length }} active</span>
           </div>
 
-          <div v-if="programFormOpen" class="inline-form-panel">
-            <div class="inline-form-header">
-              <div>
-                <h3>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h3>
-                <p>Fill only the program data. You can close this form anytime.</p>
+          <div class="mentor-grid">
+            <div v-for="mentor in mentors" :key="mentor.id" class="mentor-card">
+              <div class="mentor-avatar">
+                {{ initials(mentor) }}
               </div>
 
-              <button class="btn-secondary small" type="button" @click="closeProgramForm">
-                Close
-              </button>
+              <div>
+                <strong>{{ mentor.first_name }} {{ mentor.last_name }}</strong>
+                <span>{{ mentor.email }}</span>
+                <span class="badge" :class="statusClass(mentor.status)">
+                  {{ mentor.status }}
+                </span>
+              </div>
             </div>
 
+            <p v-if="!mentors.length" class="muted">No mentors found.</p>
+          </div>
+        </section>
+
+        <section ref="programsSection" class="panel">
+          <div class="section-title">
+            <div>
+              <h2>Programs</h2>
+              <p>Create and edit Program A / Program B settings.</p>
+            </div>
+
+            <button class="btn dark" type="button" @click="openProgramForm()">
+              Create program
+            </button>
+          </div>
+
+          <div v-if="programFormOpen" class="form-box">
+            <h3>{{ editingProgramId ? 'Edit program' : 'Create program' }}</h3>
+
             <div class="form-grid">
-              <div class="field">
-                <label>Type</label>
+              <label>
+                Type
                 <select v-model="programForm.type">
-                  <option value="program_a">program_a</option>
-                  <option value="program_b">program_b</option>
+                  <option value="program_a">Program A</option>
+                  <option value="program_b">Program B</option>
                 </select>
-              </div>
+              </label>
 
-              <div class="field">
-                <label>Name</label>
-                <input v-model="programForm.name" type="text" placeholder="Program name" />
-              </div>
+              <label>
+                Name
+                <input v-model="programForm.name" type="text" />
+              </label>
 
-              <div class="field">
-                <label>Min team size</label>
+              <label>
+                Min team size
                 <input v-model.number="programForm.min_team_size" type="number" min="1" />
-              </div>
+              </label>
 
-              <div class="field">
-                <label>Max team size</label>
+              <label>
+                Max team size
                 <input v-model.number="programForm.max_team_size" type="number" min="1" />
-              </div>
+              </label>
 
-              <div class="field full">
-                <label>Description</label>
+              <label class="full">
+                Description
                 <textarea v-model="programForm.description" rows="3" />
-              </div>
+              </label>
 
               <label class="checkbox full">
                 <input v-model="programForm.is_active" type="checkbox" />
@@ -286,517 +317,287 @@
               </label>
             </div>
 
-            <div class="actions">
-              <button class="btn-primary" :disabled="saving" @click="submitProgram">
-                {{ editingProgramId ? 'Update program' : 'Create program' }}
+            <div class="form-actions">
+              <button class="btn dark" type="button" :disabled="saving" @click="saveProgram">
+                Save program
               </button>
-
-              <button class="btn-secondary" :disabled="saving" @click="resetProgramForm">
-                Reset
+              <button class="btn light" type="button" @click="closeProgramForm">
+                Cancel
               </button>
             </div>
           </div>
 
-          <div v-if="programs.length" class="simple-list">
-            <article v-for="program in programs" :key="program.id" class="simple-item">
-              <div class="item-main">
-                <span class="item-icon">◇</span>
-                <div>
-                  <h3>{{ program.name }}</h3>
-                  <p>{{ program.description || 'No description added.' }}</p>
-
-                  <div class="item-meta">
-                    <span>{{ program.type }}</span>
-                    <span>{{ program.calls_count ?? 0 }} calls</span>
-                    <span>{{ program.min_team_size }}–{{ program.max_team_size }} members</span>
-                  </div>
+          <div class="list">
+            <div v-for="program in programs" :key="program.id" class="list-item">
+              <div>
+                <h3>{{ program.name }}</h3>
+                <p>{{ program.description || 'No description' }}</p>
+                <div class="chips">
+                  <span>{{ program.type }}</span>
+                  <span>{{ program.min_team_size }}–{{ program.max_team_size }} members</span>
+                  <span>{{ program.is_active ? 'active' : 'inactive' }}</span>
                 </div>
               </div>
 
-              <div class="item-actions">
-                <span class="status-badge" :class="program.is_active ? 'status-active' : 'status-default'">
-                  {{ program.is_active ? 'active' : 'inactive' }}
-                </span>
-
-                <button class="btn-secondary small" @click="editProgram(program)">
+              <div class="actions">
+                <button class="mini edit" type="button" @click="openProgramForm(program)">
                   Edit
                 </button>
               </div>
-            </article>
-          </div>
+            </div>
 
-          <p v-else class="muted">No programs found.</p>
+            <p v-if="!programs.length" class="muted">No programs found.</p>
+          </div>
         </section>
 
-        <section
-          ref="callsSection"
-          class="card module-card"
-          :class="{ 'section-highlight': activeSection === 'calls' }"
-        >
-          <div class="section-heading">
+        <section ref="callsSection" class="panel">
+          <div class="section-title">
             <div>
-              <h2>Calls</h2>
-              <p>Simple list of calls. Create, edit, open or close a call.</p>
+              <h2>Calls / time chapters</h2>
+              <p>Calls define project time windows and active-project overlap rules.</p>
             </div>
 
-            <div class="section-actions">
-              <div class="module-counter">
-                <strong>{{ calls.length }}</strong>
-                <span>calls</span>
-              </div>
-
-              <button class="btn-primary" type="button" @click="openCallCreate">
-                Create call
-              </button>
-            </div>
+            <button class="btn dark" type="button" @click="openCallForm()">
+              Create call
+            </button>
           </div>
 
-          <div v-if="callFormOpen" class="inline-form-panel">
-            <div class="inline-form-header">
-              <div>
-                <h3>{{ editingCallId ? 'Edit call' : 'Create call' }}</h3>
-                <p>Choose program, title and dates for this call.</p>
-              </div>
-
-              <button class="btn-secondary small" type="button" @click="closeCallForm">
-                Close
-              </button>
-            </div>
+          <div v-if="callFormOpen" class="form-box">
+            <h3>{{ editingCallId ? 'Edit call' : 'Create call' }}</h3>
 
             <div class="form-grid">
-              <div class="field">
-                <label>Program</label>
-                <select
-                  v-model="callForm.program_id"
-                  :class="{ 'is-placeholder': !callForm.program_id }"
-                >
-                  <option value="" disabled>Select program</option>
+              <label>
+                Program
+                <select v-model="callForm.program_id">
+                  <option value="">Choose program</option>
                   <option v-for="program in programs" :key="program.id" :value="program.id">
-                    {{ program.name }}
+                    {{ program.name }} / {{ program.type }}
                   </option>
                 </select>
-              </div>
+              </label>
 
-              <div class="field">
-                <label>Title</label>
-                <input v-model="callForm.title" type="text" placeholder="Call title" />
-              </div>
+              <label>
+                Title
+                <input v-model="callForm.title" type="text" />
+              </label>
 
-              <div class="field">
-                <label>Opens at</label>
+              <label>
+                Opens at
                 <input v-model="callForm.opens_at" type="datetime-local" />
-              </div>
+              </label>
 
-              <div class="field">
-                <label>Closes at</label>
+              <label>
+                Closes at
                 <input v-model="callForm.closes_at" type="datetime-local" />
-              </div>
+              </label>
 
-              <div class="field full">
-                <label>Description</label>
+              <label class="full">
+                Description
                 <textarea v-model="callForm.description" rows="3" />
-              </div>
+              </label>
             </div>
 
-            <div class="actions">
-              <button class="btn-primary" :disabled="saving" @click="submitCall">
-                {{ editingCallId ? 'Update call' : 'Create call' }}
+            <div class="form-actions">
+              <button class="btn dark" type="button" :disabled="saving" @click="saveCall">
+                Save call
               </button>
-
-              <button class="btn-secondary" :disabled="saving" @click="resetCallForm">
-                Reset
+              <button class="btn light" type="button" @click="closeCallForm">
+                Cancel
               </button>
             </div>
           </div>
 
-          <div v-if="calls.length" class="simple-list">
-            <article v-for="call in calls" :key="call.id" class="simple-item">
-              <div class="item-main">
-                <span class="item-icon">◉</span>
-                <div>
-                  <h3>{{ call.title }}</h3>
-                  <p>{{ call.description || 'No description added.' }}</p>
-
-                  <div class="item-meta">
-                    <span>{{ call.program?.name ?? 'No program' }}</span>
-                    <span>{{ call.applications_count ?? 0 }} applications</span>
-                    <span>Opens: {{ call.opens_at ? formatDate(call.opens_at) : '—' }}</span>
-                  </div>
+          <div class="list">
+            <div v-for="call in calls" :key="call.id" class="list-item">
+              <div>
+                <h3>{{ call.title }}</h3>
+                <p>{{ call.description || 'No description' }}</p>
+                <div class="chips">
+                  <span>{{ call.program?.name || 'Program' }}</span>
+                  <span>{{ call.status }}</span>
+                  <span>{{ formatDate(call.opens_at) }} → {{ formatDate(call.closes_at) }}</span>
                 </div>
               </div>
 
-              <div class="item-actions call-actions">
-                <span class="status-badge" :class="callStatusClass(call.status)">
-                  {{ call.status }}
-                </span>
-
-                <button class="btn-secondary small" @click="editCall(call)">
+              <div class="actions">
+                <button class="mini edit" type="button" @click="openCallForm(call)">
                   Edit
                 </button>
 
                 <button
-                  class="btn-success small"
-                  :disabled="call.status === 'open' || saving"
+                  v-if="call.status !== 'open'"
+                  class="mini approve"
+                  type="button"
                   @click="openCall(call.id)"
                 >
                   Open
                 </button>
 
                 <button
-                  class="btn-danger small"
-                  :disabled="call.status === 'closed' || saving"
+                  v-if="call.status === 'open'"
+                  class="mini reject"
+                  type="button"
                   @click="closeCall(call.id)"
                 >
                   Close
                 </button>
               </div>
-            </article>
-          </div>
+            </div>
 
-          <p v-else class="muted">No calls found.</p>
+            <p v-if="!calls.length" class="muted">No calls found.</p>
+          </div>
         </section>
 
-        <section
-          ref="applicationsSection"
-          class="card module-card"
-          :class="{ 'section-highlight': activeSection === 'applications' }"
-        >
-          <div class="section-heading">
+        <section ref="applicationsSection" class="panel">
+          <div class="section-title">
             <div>
-              <h2>Applications / Assign mentor</h2>
-              <p>Attach active mentors to submitted applications.</p>
+              <h2>Applications</h2>
+              <p>Review teams and assign mentors.</p>
             </div>
-
-            <div class="module-counter">
-              <strong>{{ applications.length }}</strong>
-              <span>applications</span>
-            </div>
+            <span class="counter">{{ filteredApplications.length }} shown</span>
           </div>
 
-          <div v-if="applications.length" class="table-wrap">
+          <div class="filters">
+            <input v-model="applicationSearch" type="text" placeholder="Search application..." />
+
+            <select v-model="applicationStatusFilter">
+              <option value="">All statuses</option>
+              <option value="submitted">Submitted</option>
+              <option value="approved">Approved</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
+          <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Application</th>
                   <th>Team</th>
+                  <th>Project / challenge</th>
                   <th>Call</th>
                   <th>Status</th>
-                  <th>Current mentors</th>
-                  <th>Assign mentor</th>
+                  <th>Budget</th>
+                  <th>Mentor</th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr v-for="application in applications" :key="application.id">
-                  <td><span class="mono">{{ application.id }}</span></td>
-                  <td>{{ application.team?.name ?? '-' }}</td>
-                  <td>{{ application.call?.title ?? '-' }}</td>
+                <tr v-for="application in filteredApplications" :key="application.id">
                   <td>
-                    <select
-                      :value="application.status"
-                      @change="handleTransition(application, ($event.target as HTMLSelectElement).value)"
-                      class="role-select"
-                      :disabled="saving"
-                    >
-                      <option v-for="status in allStatuses" :key="status" :value="status">
-                        {{ status.replace(/_/g, ' ') }}
-                      </option>
-                    </select>
+                    <strong>{{ application.team?.name || 'Team' }}</strong>
                   </td>
                   <td>
-                    <span v-if="application.mentorships?.length">
-                      {{ application.mentorships.map((m) => mentorName(m.mentor)).join(', ') }}
+                    {{ application.challenge?.title || application.summary || 'Application' }}
+                  </td>
+                  <td>
+                    {{ application.call?.title || 'Call' }}
+                  </td>
+                  <td>
+                    <span class="badge" :class="applicationStatusClass(application.status)">
+                      {{ application.status }}
                     </span>
-                    <span v-else class="muted">-</span>
                   </td>
-                  <td class="assign-cell">
-                    <select
-                      v-model="selectedMentorByApplication[application.id]"
-                      :class="{ 'is-placeholder': !selectedMentorByApplication[application.id] }"
-                    >
-                      <option value="" disabled>Select mentor</option>
-                      <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">
-                        {{ mentor.first_name }} {{ mentor.last_name }}
-                      </option>
-                    </select>
+                  <td>
+                    {{ application.requested_budget ? `${application.requested_budget} €` : '—' }}
+                  </td>
+                  <td>
+                    <div class="assign">
+                      <select v-model="mentorSelects[application.id]" class="small-select">
+                        <option value="">Choose mentor</option>
+                        <option v-for="mentor in activeMentors" :key="mentor.id" :value="mentor.id">
+                          {{ mentor.first_name }} {{ mentor.last_name }}
+                        </option>
+                      </select>
 
-                    <button
-                      class="btn-primary small"
-                      :disabled="!selectedMentorByApplication[application.id] || saving"
-                      @click="assignMentor(application.id)"
-                    >
-                      Assign
-                    </button>
+                      <button
+                        class="mini approve"
+                        type="button"
+                        :disabled="saving || !mentorSelects[application.id]"
+                        @click="assignMentor(application)"
+                      >
+                        Assign
+                      </button>
+                    </div>
+
+                    <small v-if="currentMentorName(application)" class="current-mentor">
+                      Current: {{ currentMentorName(application) }}
+                    </small>
                   </td>
+                </tr>
+
+                <tr v-if="!filteredApplications.length">
+                  <td colspan="6" class="muted">No applications found.</td>
                 </tr>
               </tbody>
             </table>
           </div>
-
-          <p v-else class="muted">No applications found.</p>
         </section>
       </template>
-
-      <div v-if="deleteModalOpen && userToDelete" class="modal-backdrop" @click.self="closeDeleteModal">
-        <div class="delete-modal">
-          <div class="modal-icon">!</div>
-
-          <h3>Delete user?</h3>
-
-          <p class="modal-text">
-            You are going to permanently delete this account. This action cannot be undone.
-            Admins will receive an email notification about this deletion.
-          </p>
-
-          <div class="delete-user-box">
-            <p><strong>Name:</strong> {{ userToDelete.first_name }} {{ userToDelete.last_name }}</p>
-            <p><strong>Email:</strong> {{ userToDelete.email }}</p>
-            <p><strong>Type:</strong> {{ userToDelete.account_type }}</p>
-            <p><strong>Status:</strong> {{ userToDelete.status }}</p>
-          </div>
-
-          <label class="delete-confirm-label">
-            Type <strong>delete</strong> to confirm
-          </label>
-
-          <input
-            v-model="deleteConfirmationText"
-            class="delete-confirm-input"
-            type="text"
-            placeholder="delete"
-            autocomplete="off"
-          />
-
-          <div class="modal-actions">
-            <button class="btn-secondary" :disabled="saving" @click="closeDeleteModal">
-              Cancel
-            </button>
-
-            <button
-              class="btn-danger"
-              :disabled="saving || deleteConfirmationText.trim().toLowerCase() !== 'delete'"
-              @click="confirmDeleteUser"
-            >
-              Yes, delete
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import AppLayout from '../components/AppLayout.vue'
+import { useAuthStore } from '../stores/auth'
 import {
   adminApi,
   type AdminApplication,
-  type AdminCall,
   type AdminDashboardStats,
-  type AdminProgram,
   type AdminUser,
 } from '../api/admin'
-import { useAuthStore } from '../stores/auth'
-import AppLayout from '../components/AppLayout.vue'
-const allStatuses = [
-  'draft', 'submitted', 'formally_verified', 'in_evaluation',
-  'pending_supplement', 'approved', 'rejected', 'onboarding',
-  'active', 'paused', 'completed', 'archived'
-]
 
-async function handleTransition(application: AdminApplication, newStatus: string) {
-  if (newStatus === application.status) return
-  saving.value = true
-  try {
-    await adminApi.transitionApplication(application.id, newStatus)
-    successMessage.value = `Status updated to ${newStatus}.`
-    await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
-}
+type ProgramItem = any
+type CallItem = any
 
-type SectionKey = 'users' | 'programs' | 'calls' | 'applications'
-
-const router = useRouter()
 const authStore = useAuthStore()
 
-const loading = ref(false)
+const loading = ref(true)
 const saving = ref(false)
-const error = ref<string | null>(null)
-const successMessage = ref<string | null>(null)
 const accessDenied = ref(false)
+const error = ref('')
+const successMessage = ref('')
 
 const stats = ref<AdminDashboardStats | null>(null)
 const users = ref<AdminUser[]>([])
-const programs = ref<AdminProgram[]>([])
-const calls = ref<AdminCall[]>([])
+const programs = ref<ProgramItem[]>([])
+const calls = ref<CallItem[]>([])
 const applications = ref<AdminApplication[]>([])
 
 const usersSection = ref<HTMLElement | null>(null)
+const mentorsSection = ref<HTMLElement | null>(null)
 const programsSection = ref<HTMLElement | null>(null)
 const callsSection = ref<HTMLElement | null>(null)
 const applicationsSection = ref<HTMLElement | null>(null)
-const activeSection = ref<SectionKey | null>(null)
-
-const editingProgramId = ref<string | null>(null)
-const editingCallId = ref<string | null>(null)
-const programFormOpen = ref(false)
-const callFormOpen = ref(false)
-
-const selectedMentorByApplication = ref<Record<string, string>>({})
 
 const userSearch = ref('')
 const userStatusFilter = ref('')
 const userTypeFilter = ref('')
+const applicationSearch = ref('')
+const applicationStatusFilter = ref('')
 
-const deleteModalOpen = ref(false)
-const userToDelete = ref<AdminUser | null>(null)
-const deleteConfirmationText = ref('')
+const programFormOpen = ref(false)
+const editingProgramId = ref<string | null>(null)
 
-const mentors = computed(() =>
-  users.value.filter((user) => user.account_type === 'mentor' && user.status === 'active'),
-)
+const callFormOpen = ref(false)
+const editingCallId = ref<string | null>(null)
 
-const filteredUsers = computed(() => {
-  return users.value.filter((user) => {
-    const search = userSearch.value.trim().toLowerCase()
-    const matchesSearch =
-      !search ||
-      `${user.first_name} ${user.last_name}`.toLowerCase().includes(search) ||
-      user.email.toLowerCase().includes(search)
+const mentorSelects = reactive<Record<string, string>>({})
 
-    const matchesStatus = !userStatusFilter.value || user.status === userStatusFilter.value
-    const matchesType = !userTypeFilter.value || user.account_type === userTypeFilter.value
-
-    return matchesSearch && matchesStatus && matchesType
-  })
-})
-
-async function handleRoleChange(user: AdminUser, role: string) {
-  saving.value = true
-  try {
-    await adminApi.updateUser(user.id, { account_type: role })
-    successMessage.value = `Role updated to ${role}.`
-    await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
-}
-
-const navigationCards = computed(() => {
-  if (!stats.value) {
-    return []
-  }
-
-  return [
-    {
-      key: 'users',
-      target: 'users' as SectionKey,
-      targetLabel: 'Go to users',
-      icon: '◉',
-      title: 'Users',
-      value: stats.value.pending_users_count,
-      subtitle: `${stats.value.users_count} total · pending approvals`,
-      info: 'Approve, reject or delete user accounts.',
-      tone: 'green',
-    },
-    {
-      key: 'programs',
-      target: 'programs' as SectionKey,
-      targetLabel: 'Go to programs',
-      icon: '◇',
-      title: 'Programs',
-      value: stats.value.total_programs,
-      subtitle: `${stats.value.active_programs} active programs`,
-      info: 'Create or edit Program A and Program B settings.',
-      tone: 'blue',
-    },
-    {
-      key: 'calls',
-      target: 'calls' as SectionKey,
-      targetLabel: 'Go to calls',
-      icon: '◎',
-      title: 'Calls',
-      value: stats.value.open_calls,
-      subtitle: `${stats.value.total_calls} total calls`,
-      info: 'Open, close and schedule calls for programs.',
-      tone: 'yellow',
-    },
-    {
-      key: 'applications',
-      target: 'applications' as SectionKey,
-      targetLabel: 'Go to applications',
-      icon: '✦',
-      title: 'Applications',
-      value: stats.value.total_applications,
-      subtitle: `${stats.value.pending_applications} pending`,
-      info: 'Check applications and assign mentors.',
-      tone: 'purple',
-    },
-  ]
-})
-
-const infoCards = computed(() => {
-  if (!stats.value) {
-    return []
-  }
-
-  return [
-    {
-      key: 'approved',
-      icon: '✓',
-      title: 'Approved',
-      value: stats.value.approved_applications,
-      subtitle: 'approved applications',
-      info: 'Shows how many applications were accepted.',
-      tone: 'green',
-    },
-    {
-      key: 'rejected',
-      icon: '!',
-      title: 'Rejected',
-      value: stats.value.rejected_applications,
-      subtitle: 'rejected applications',
-      info: 'Shows how many applications were rejected.',
-      tone: 'red',
-    },
-    {
-      key: 'pending',
-      icon: '⌁',
-      title: 'Pending',
-      value: stats.value.pending_applications,
-      subtitle: 'waiting for review',
-      info: 'Applications still waiting for admin action.',
-      tone: 'yellow',
-    },
-    {
-      key: 'mentors',
-      icon: '★',
-      title: 'Mentors',
-      value: stats.value.mentors_count,
-      subtitle: 'active mentors',
-      info: 'Mentors available for application assignment.',
-      tone: 'blue',
-    },
-  ]
-})
-
-const programForm = ref({
-  type: 'program_a' as 'program_a' | 'program_b',
+const programForm = reactive({
+  type: 'program_a',
   name: '',
   description: '',
-  min_team_size: 3,
-  max_team_size: 10,
+  min_team_size: 1,
+  max_team_size: 5,
   is_active: true,
 })
 
-const callForm = ref({
+const callForm = reactive({
   program_id: '',
   title: '',
   description: '',
@@ -804,615 +605,469 @@ const callForm = ref({
   closes_at: '',
 })
 
-function mentorName(mentor: any) {
-  if (!mentor) return '-'
-  return `${mentor.first_name} ${mentor.last_name}`
-}
+const authUserId = computed(() => authStore.user?.id ?? '')
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString()
-}
+const mentors = computed(() =>
+  users.value.filter((user) => user.account_type === 'mentor'),
+)
 
-function statusClass(status: string) {
-  if (status === 'active') return 'status-active'
-  if (status === 'pending') return 'status-pending'
-  if (status === 'suspended') return 'status-rejected'
-  return 'status-default'
-}
+const activeMentors = computed(() =>
+  mentors.value.filter((mentor) => mentor.status === 'active'),
+)
 
-function callStatusClass(status: string) {
-  if (status === 'open') return 'status-active'
-  if (status === 'draft') return 'status-pending'
-  if (status === 'closed') return 'status-rejected'
-  return 'status-default'
-}
+const filteredUsers = computed(() => {
+  const search = userSearch.value.trim().toLowerCase()
 
-function isCurrentUser(user: AdminUser) {
-  return authStore.user?.id === user.id
-}
+  return users.value.filter((user) => {
+    const name = `${user.first_name} ${user.last_name}`.toLowerCase()
+    const matchesSearch =
+      !search ||
+      name.includes(search) ||
+      user.email.toLowerCase().includes(search)
 
-function formatDateTimeLocal(value: string | null) {
-  if (!value) return ''
+    const matchesStatus =
+      !userStatusFilter.value || user.status === userStatusFilter.value
 
-  const date = new Date(value)
-  const offset = date.getTimezoneOffset()
-  const local = new Date(date.getTime() - offset * 60000)
+    const matchesType =
+      !userTypeFilter.value || user.account_type === userTypeFilter.value
 
-  return local.toISOString().slice(0, 16)
-}
+    return matchesSearch && matchesStatus && matchesType
+  })
+})
 
-function toApiDate(value: string) {
-  return value ? new Date(value).toISOString() : null
-}
+const filteredApplications = computed(() => {
+  const search = applicationSearch.value.trim().toLowerCase()
 
-function sectionElement(section: SectionKey) {
-  const map: Record<SectionKey, HTMLElement | null> = {
-    users: usersSection.value,
-    programs: programsSection.value,
-    calls: callsSection.value,
-    applications: applicationsSection.value,
-  }
+  return applications.value.filter((application) => {
+    const text = [
+      application.team?.name,
+      application.challenge?.title,
+      application.call?.title,
+      application.summary,
+      application.status,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
 
-  return map[section]
-}
+    const matchesSearch = !search || text.includes(search)
+    const matchesStatus =
+      !applicationStatusFilter.value ||
+      application.status === applicationStatusFilter.value
 
-function scrollToSection(section: SectionKey) {
-  const element = sectionElement(section)
+    return matchesSearch && matchesStatus
+  })
+})
 
-  if (!element) {
-    return
-  }
+onMounted(() => {
+  loadAll()
+})
 
-  activeSection.value = section
-  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-
-  window.setTimeout(() => {
-    if (activeSection.value === section) {
-      activeSection.value = null
-    }
-  }, 1400)
-}
-
-function openProgramCreate() {
-  resetProgramForm()
-  programFormOpen.value = true
-}
-
-function closeProgramForm() {
-  resetProgramForm()
-  programFormOpen.value = false
-}
-
-function resetProgramForm() {
-  editingProgramId.value = null
-  programForm.value = {
-    type: 'program_a',
-    name: '',
-    description: '',
-    min_team_size: 3,
-    max_team_size: 10,
-    is_active: true,
-  }
-}
-
-function editProgram(program: AdminProgram) {
-  editingProgramId.value = program.id
-  programFormOpen.value = true
-  programForm.value = {
-    type: program.type,
-    name: program.name,
-    description: program.description ?? '',
-    min_team_size: program.min_team_size,
-    max_team_size: program.max_team_size,
-    is_active: program.is_active,
-  }
-  scrollToSection('programs')
-}
-
-function openCallCreate() {
-  resetCallForm()
-  callFormOpen.value = true
-}
-
-function closeCallForm() {
-  resetCallForm()
-  callFormOpen.value = false
-}
-
-function resetCallForm() {
-  editingCallId.value = null
-  callForm.value = {
-    program_id: '',
-    title: '',
-    description: '',
-    opens_at: '',
-    closes_at: '',
-  }
-}
-
-function editCall(call: AdminCall) {
-  editingCallId.value = call.id
-  callFormOpen.value = true
-  callForm.value = {
-    program_id: call.program_id,
-    title: call.title,
-    description: call.description ?? '',
-    opens_at: formatDateTimeLocal(call.opens_at),
-    closes_at: formatDateTimeLocal(call.closes_at),
-  }
-  scrollToSection('calls')
-}
-
-function handleApiError(e: any) {
-  if (e.response?.status === 403) {
-    accessDenied.value = true
-    error.value = e.response?.data?.message ?? 'Access denied.'
-    return
-  }
-
-  if (e.response?.status === 401) {
-    authStore.logout()
-    localStorage.removeItem('token')
-    router.replace('/login')
-    return
-  }
-
-  error.value = e.response?.data?.message ?? 'Request failed.'
+function stat(key: keyof AdminDashboardStats): number {
+  return Number(stats.value?.[key] ?? 0)
 }
 
 async function loadAll() {
   loading.value = true
-  error.value = null
-  successMessage.value = null
   accessDenied.value = false
+  error.value = ''
+  successMessage.value = ''
 
   try {
-    const [dashboard, allUsers, allPrograms, allCalls, allApplications] = await Promise.all([
-      adminApi.getDashboard(),
-      adminApi.getUsers(),
-      adminApi.getPrograms(),
-      adminApi.getCalls(),
-      adminApi.getApplications(),
-    ])
+    const [statsResponse, usersResponse, programsResponse, callsResponse, applicationsResponse] =
+      await Promise.all([
+        adminApi.getDashboard(),
+        adminApi.getUsers(),
+        adminApi.getPrograms(),
+        adminApi.getCalls(),
+        adminApi.getApplications(),
+      ])
 
-    stats.value = dashboard
-    users.value = allUsers
-    console.log('All users:', allUsers)
-    console.log('Mentors:', mentors.value)
-    programs.value = allPrograms
-    calls.value = allCalls
-    applications.value = allApplications
-    
+    stats.value = statsResponse
+    users.value = usersResponse
+    programs.value = programsResponse
+    calls.value = callsResponse
+    applications.value = applicationsResponse
+
+    for (const application of applications.value) {
+      const mentorId =
+        application.latest_mentorship?.mentor_id ??
+        application.mentorships?.find((mentorship) => !mentorship.ended_at)?.mentor_id ??
+        ''
+
+      mentorSelects[application.id] = mentorId
+    }
   } catch (e: any) {
-    handleApiError(e)
+    if (e?.response?.status === 403) {
+      accessDenied.value = true
+    } else {
+      error.value = e?.response?.data?.message ?? 'Failed to load admin data.'
+    }
   } finally {
     loading.value = false
   }
 }
 
-async function approveUser(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  try {
-    const response = await adminApi.approveUser(id)
-    users.value = users.value.map((u) => (u.id === id ? { ...u, status: 'active' } : u))
-    successMessage.value = response.message ?? 'User approved successfully.'
-    await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
+function scrollTo(section: 'users' | 'mentors' | 'programs' | 'calls' | 'applications') {
+  const map = {
+    users: usersSection,
+    mentors: mentorsSection,
+    programs: programsSection,
+    calls: callsSection,
+    applications: applicationsSection,
   }
+
+  map[section].value?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
+
+async function approveUser(id: string) {
+  await runAction(async () => {
+    await adminApi.approveUser(id)
+    successMessage.value = 'User approved.'
+    await loadAll()
+  })
 }
 
 async function rejectUser(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  try {
-    const response = await adminApi.rejectUser(id)
-    users.value = users.value.map((u) => (u.id === id ? { ...u, status: 'suspended' } : u))
-    successMessage.value = response.message ?? 'User rejected successfully.'
+  await runAction(async () => {
+    await adminApi.rejectUser(id)
+    successMessage.value = 'User rejected.'
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
-function deleteUser(user: AdminUser) {
-  error.value = null
-  successMessage.value = null
+async function deleteUser(user: AdminUser) {
+  const ok = window.confirm(
+    `Delete ${user.first_name} ${user.last_name}? This action cannot be undone.`,
+  )
 
-  if (isCurrentUser(user)) {
-    error.value = 'You cannot delete your own admin account.'
-    return
-  }
+  if (!ok) return
 
-  userToDelete.value = user
-  deleteConfirmationText.value = ''
-  deleteModalOpen.value = true
-}
-
-function closeDeleteModal() {
-  if (saving.value) {
-    return
-  }
-
-  deleteModalOpen.value = false
-  userToDelete.value = null
-  deleteConfirmationText.value = ''
-}
-
-async function confirmDeleteUser() {
-  if (!userToDelete.value) {
-    return
-  }
-
-  if (deleteConfirmationText.value.trim().toLowerCase() !== 'delete') {
-    error.value = 'Type "delete" to confirm deletion.'
-    return
-  }
-
-  const deletingUserId = userToDelete.value.id
-
-  saving.value = true
-  error.value = null
-  successMessage.value = null
-
-  try {
-    const response = await adminApi.deleteUser(deletingUserId)
-
-    users.value = users.value.filter((u) => u.id !== deletingUserId)
-    successMessage.value = response.message ?? 'User deleted successfully.'
-
-    deleteModalOpen.value = false
-    userToDelete.value = null
-    deleteConfirmationText.value = ''
-
+  await runAction(async () => {
+    await adminApi.deleteUser(user.id)
+    successMessage.value = 'User deleted.'
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
-async function submitProgram() {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
+async function changeRole(user: AdminUser, accountType: string) {
+  if (user.account_type === accountType) return
 
-  try {
+  const ok = window.confirm(
+    `Change role for ${user.first_name} ${user.last_name} to ${accountType}?`,
+  )
+
+  if (!ok) {
+    await loadAll()
+    return
+  }
+
+  await runAction(async () => {
+    await adminApi.updateUserRole(user.id, accountType)
+    successMessage.value = 'User role updated.'
+    await loadAll()
+  })
+}
+
+function openProgramForm(program?: ProgramItem) {
+  if (program) {
+    editingProgramId.value = program.id
+    programForm.type = program.type ?? 'program_a'
+    programForm.name = program.name ?? ''
+    programForm.description = program.description ?? ''
+    programForm.min_team_size = Number(program.min_team_size ?? 1)
+    programForm.max_team_size = Number(program.max_team_size ?? 5)
+    programForm.is_active = Boolean(program.is_active)
+  } else {
+    editingProgramId.value = null
+    programForm.type = 'program_a'
+    programForm.name = ''
+    programForm.description = ''
+    programForm.min_team_size = 1
+    programForm.max_team_size = 5
+    programForm.is_active = true
+  }
+
+  programFormOpen.value = true
+}
+
+function closeProgramForm() {
+  programFormOpen.value = false
+  editingProgramId.value = null
+}
+
+async function saveProgram() {
+  await runAction(async () => {
+    const payload = {
+      type: programForm.type,
+      name: programForm.name,
+      description: programForm.description,
+      min_team_size: programForm.min_team_size,
+      max_team_size: programForm.max_team_size,
+      is_active: programForm.is_active,
+    }
+
     if (editingProgramId.value) {
-      await adminApi.updateProgram(editingProgramId.value, programForm.value)
-      successMessage.value = 'Program updated successfully.'
+      await adminApi.updateProgram(editingProgramId.value, payload)
+      successMessage.value = 'Program updated.'
     } else {
-      await adminApi.createProgram(programForm.value)
-      successMessage.value = 'Program created successfully.'
+      await adminApi.createProgram(payload)
+      successMessage.value = 'Program created.'
     }
 
     closeProgramForm()
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
-async function submitCall() {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  const payload = {
-    program_id: callForm.value.program_id,
-    title: callForm.value.title,
-    description: callForm.value.description || null,
-    opens_at: toApiDate(callForm.value.opens_at),
-    closes_at: toApiDate(callForm.value.closes_at),
+function openCallForm(call?: CallItem) {
+  if (call) {
+    editingCallId.value = call.id
+    callForm.program_id = call.program_id ?? call.program?.id ?? ''
+    callForm.title = call.title ?? ''
+    callForm.description = call.description ?? ''
+    callForm.opens_at = toLocalInput(call.opens_at)
+    callForm.closes_at = toLocalInput(call.closes_at)
+  } else {
+    editingCallId.value = null
+    callForm.program_id = ''
+    callForm.title = ''
+    callForm.description = ''
+    callForm.opens_at = ''
+    callForm.closes_at = ''
   }
 
-  try {
+  callFormOpen.value = true
+}
+
+function closeCallForm() {
+  callFormOpen.value = false
+  editingCallId.value = null
+}
+
+async function saveCall() {
+  await runAction(async () => {
+    const payload = {
+      program_id: callForm.program_id,
+      title: callForm.title,
+      description: callForm.description,
+      opens_at: callForm.opens_at || null,
+      closes_at: callForm.closes_at || null,
+    }
+
     if (editingCallId.value) {
       await adminApi.updateCall(editingCallId.value, payload)
-      successMessage.value = 'Call updated successfully.'
+      successMessage.value = 'Call updated.'
     } else {
       await adminApi.createCall(payload)
-      successMessage.value = 'Call created successfully.'
+      successMessage.value = 'Call created.'
     }
 
     closeCallForm()
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
 async function openCall(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  try {
+  await runAction(async () => {
     await adminApi.openCall(id)
-    successMessage.value = 'Call opened successfully.'
+    successMessage.value = 'Call opened.'
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
 async function closeCall(id: string) {
-  error.value = null
-  successMessage.value = null
-  saving.value = true
-
-  try {
+  await runAction(async () => {
     await adminApi.closeCall(id)
-    successMessage.value = 'Call closed successfully.'
+    successMessage.value = 'Call closed.'
     await loadAll()
-  } catch (e: any) {
-    handleApiError(e)
-  } finally {
-    saving.value = false
-  }
+  })
 }
 
-async function assignMentor(applicationId: string) {
-  const mentorId = selectedMentorByApplication.value[applicationId]
+async function assignMentor(application: AdminApplication) {
+  const mentorId = mentorSelects[application.id]
 
   if (!mentorId) return
 
-  error.value = null
-  successMessage.value = null
+  await runAction(async () => {
+    await adminApi.assignMentor(application.id, mentorId)
+    successMessage.value = 'Mentor assigned.'
+    await loadAll()
+  })
+}
+
+async function runAction(callback: () => Promise<void>) {
   saving.value = true
+  error.value = ''
+  successMessage.value = ''
 
   try {
-    await adminApi.assignMentor(applicationId, mentorId)
-    successMessage.value = 'Mentor assigned successfully.'
-    selectedMentorByApplication.value[applicationId] = ''
-    await loadAll()
+    await callback()
   } catch (e: any) {
-    handleApiError(e)
+    error.value = e?.response?.data?.message ?? 'Action failed.'
   } finally {
     saving.value = false
   }
 }
 
-onMounted(async () => {
-  await loadAll()
-})
+function currentMentorName(application: AdminApplication): string {
+  const active =
+    application.latest_mentorship ??
+    application.mentorships?.find((mentorship) => !mentorship.ended_at)
+
+  if (!active?.mentor) return ''
+
+  return `${active.mentor.first_name} ${active.mentor.last_name}`.trim()
+}
+
+function initials(user: AdminUser): string {
+  return `${user.first_name?.[0] ?? ''}${user.last_name?.[0] ?? ''}`.toUpperCase() || 'M'
+}
+
+function statusClass(status: string): string {
+  if (status === 'active') return 'green'
+  if (status === 'pending') return 'amber'
+  if (status === 'suspended' || status === 'rejected') return 'red'
+
+  return 'grey'
+}
+
+function applicationStatusClass(status: string): string {
+  if (['approved', 'active', 'completed'].includes(status)) return 'green'
+  if (['submitted', 'formally_verified', 'in_evaluation', 'pending_supplement'].includes(status)) {
+    return 'amber'
+  }
+  if (status === 'rejected') return 'red'
+
+  return 'grey'
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return '—'
+
+  return new Date(value).toLocaleDateString('sk-SK')
+}
+
+function toLocalInput(value?: string | null): string {
+  if (!value) return ''
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) return ''
+
+  const offset = date.getTimezoneOffset()
+  const localDate = new Date(date.getTime() - offset * 60 * 1000)
+
+  return localDate.toISOString().slice(0, 16)
+}
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-
-.admin {
-  max-width: 1280px;
-  font-family: 'DM Sans', sans-serif;
-  color: #0f172a;
+.admin-page {
+  max-width: 1180px;
 }
 
-.page-header {
+.hero {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
+  padding: 1.5rem 0 1.2rem;
+  border-bottom: 1px solid #dbe3eb;
   margin-bottom: 1rem;
-  padding: 2rem 0 1.5rem 0;
-  border-bottom: 1px solid #e2e8f0;
 }
 
-.kicker {
+.eyebrow {
   display: inline-flex;
   background: #ecfdf5;
   color: #047857;
   border-radius: 999px;
-  padding: 0.25rem 0.7rem;
-  font-size: 0.78rem;
+  padding: 0.22rem 0.65rem;
+  font-size: 0.74rem;
   font-weight: 800;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.65rem;
 }
 
-.role-select {
-  padding: 0.3rem 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  background: white;
-  cursor: pointer;
-  width: auto;
-  min-width: 140px;
-}
-
-.page-title {
+.hero h1 {
+  margin: 0 0 0.25rem;
+  color: #0f1117;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.04em;
-  color: #0f172a;
+  font-weight: 900;
 }
 
-.page-subtitle {
+.hero p {
+  margin: 0;
   color: #64748b;
   font-size: 0.95rem;
 }
 
-.header-actions,
-.section-actions {
+.admin-tabs {
   display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-}
-
-.admin-switch {
-  display: flex;
-  flex-wrap: wrap;
   gap: 0.65rem;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
 }
 
-.switch-link {
+.tab {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.9rem;
-  border-radius: 12px;
+  justify-content: center;
+  min-height: 42px;
+  gap: 0.45rem;
+  padding: 0.58rem 1rem;
+  border-radius: 13px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #334155;
-  text-decoration: none;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #1f2a44;
+  border: 1px solid #dbe3eb;
+  font-size: 0.9rem;
+  line-height: 1;
   font-weight: 800;
-  font-size: 0.86rem;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
   transition: all 0.15s ease;
 }
 
-.switch-link:hover,
-.active-switch {
+.tab:hover,
+.tab.active {
   background: #0f172a;
-  border-color: #0f172a;
   color: #6ee7b7;
+  border-color: #0f172a;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
 }
 
-.banner {
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  border: 1px solid transparent;
-}
-
-.banner.error {
-  background: #fef2f2;
-  color: #991b1b;
-  border-color: #fecaca;
-}
-
-.banner.success {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
-}
-
-.overview-section {
-  margin-bottom: 1.5rem;
-}
-
-.overview-group-title {
-  margin: 0 0 0.7rem;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #334155;
-}
-
-.overview-group-title.second {
-  margin-top: 1.25rem;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.stat-card {
-  position: relative;
-  overflow: hidden;
-  text-align: left;
+.overview-panel,
+.panel {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  padding: 1.2rem;
-  min-height: 185px;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
-  transition:
-    transform 0.22s ease,
-    box-shadow 0.22s ease,
-    border-color 0.22s ease,
-    background 0.22s ease;
+  border: 1px solid #dbe3eb;
+  border-radius: 22px;
+  padding: 1.25rem;
+  margin-bottom: 1.3rem;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
 }
 
-.stat-card.clickable {
-  cursor: pointer;
-}
-
-.stat-card.info-only {
-  cursor: default;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  border-color: #a7f3d0;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
-  background: #ffffff;
-}
-
-.stat-card.info-only:hover {
-  transform: translateY(-1px);
-}
-
-.stat-card::after {
-  content: '';
-  position: absolute;
-  right: -30px;
-  top: -30px;
-  width: 95px;
-  height: 95px;
-  border-radius: 999px;
-  background: #ecfdf5;
-  opacity: 0.75;
-  transition: transform 0.22s ease, opacity 0.22s ease;
-}
-
-.stat-card:hover::after {
-  transform: scale(1.08);
-  opacity: 0.95;
-}
-
-.stat-card.blue::after {
-  background: #eff6ff;
-}
-
-.stat-card.yellow::after {
-  background: #fef3c7;
-}
-
-.stat-card.purple::after {
-  background: #f5f3ff;
-}
-
-.stat-card.red::after {
-  background: #fee2e2;
-}
-
-.stat-top {
+.overview-panel {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 1rem;
-  margin-bottom: 0.9rem;
-  position: relative;
-  z-index: 1;
+  background:
+    radial-gradient(circle at top right, rgba(110, 231, 183, 0.18), transparent 32%),
+    #ffffff;
 }
 
-.stat-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+.overview-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.overview-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 17px;
   background: #0f172a;
   color: #6ee7b7;
   display: flex;
@@ -1421,112 +1076,140 @@ onMounted(async () => {
   font-weight: 900;
 }
 
-.stat-target {
-  color: #047857;
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
-  border-radius: 999px;
-  padding: 0.22rem 0.55rem;
-  font-size: 0.7rem;
-  font-weight: 900;
-  opacity: 0.8;
-  transition: opacity 0.18s ease, background 0.18s ease;
-}
-
-.stat-card:hover .stat-target {
-  opacity: 1;
-  background: #d1fae5;
-}
-
-.muted-target {
-  color: #64748b;
-  background: #f8fafc;
-  border-color: #e2e8f0;
-}
-
-.stat-card:hover .muted-target {
-  background: #f8fafc;
-}
-
-.stat-card h3 {
-  position: relative;
-  z-index: 1;
-  font-size: 0.74rem;
-  font-weight: 800;
-  color: #64748b;
-  margin: 0 0 0.55rem 0;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.stat-card p {
-  position: relative;
-  z-index: 1;
+.overview-main h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
   font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.overview-main p,
+.overview-note span {
   margin: 0;
-  font-size: 1.85rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.04em;
-}
-
-.stat-card small {
-  position: relative;
-  z-index: 1;
-  display: block;
   color: #64748b;
-  margin-top: 0.2rem;
-  font-size: 0.82rem;
 }
 
-.summary-extra {
-  position: relative;
-  z-index: 1;
-  margin-top: 0.75rem;
-  color: #334155;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  height: 42px;
-  opacity: 0.62;
-  transition: opacity 0.18s ease, color 0.18s ease;
-}
-
-.stat-card:hover .summary-extra {
-  opacity: 1;
-  color: #0f172a;
-}
-
-.info-grid .stat-card {
-  min-height: 165px;
-}
-
-.card {
-  background: #ffffff;
+.overview-note {
+  max-width: 380px;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
-  margin-bottom: 1.25rem;
-  scroll-margin-top: 1.5rem;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
 }
 
-.module-card {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+.overview-note strong {
+  display: block;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
 }
 
-.module-card:hover {
-  border-color: #d1fae5;
-  box-shadow: 0 16px 35px rgba(15, 23, 42, 0.06);
+.kpi-grid,
+.work-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.3rem;
 }
 
-.module-card.section-highlight {
+.kpi-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.work-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.kpi-card,
+.work-card {
+  background: #ffffff;
+  border: 1px solid #dbe3eb;
+  border-radius: 20px;
+  padding: 1rem;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.kpi-card.clickable,
+.work-card {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.kpi-card.clickable:hover,
+.work-card:hover {
+  transform: translateY(-2px);
   border-color: #6ee7b7;
-  box-shadow:
-    0 0 0 4px rgba(110, 231, 183, 0.18),
-    0 16px 35px rgba(15, 23, 42, 0.08);
 }
 
-.section-heading {
+.kpi-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.kpi-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: #0f172a;
+  color: #6ee7b7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-card strong,
+.work-card strong {
+  display: block;
+  margin-top: 1rem;
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.kpi-card small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #3b5d88;
+}
+
+.work-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 130px;
+}
+
+.work-card h3 {
+  margin: 0 0 0.35rem;
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.work-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+  font-size: 0.9rem;
+}
+
+.work-card.warning {
+  background: #fffbeb;
+}
+
+.work-card.danger {
+  background: #fef2f2;
+}
+
+.work-card.done {
+  background: #ecfdf5;
+}
+
+.section-title {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1534,115 +1217,52 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
-.section-heading.compact {
-  margin-bottom: 0.9rem;
-}
-
-.section-heading h2 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.12rem;
-  font-weight: 800;
+.section-title h2 {
   margin: 0 0 0.25rem;
   color: #0f172a;
-  letter-spacing: -0.03em;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 900;
 }
 
-.section-heading p {
+.section-title p {
   margin: 0;
   color: #64748b;
-  font-size: 0.88rem;
 }
 
-.module-counter {
-  min-width: 82px;
+.counter {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 0.55rem 0.75rem;
-  text-align: center;
-}
-
-.module-counter strong {
-  display: block;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0f172a;
-  font-size: 1.05rem;
-  line-height: 1;
-}
-
-.module-counter span {
-  display: block;
-  color: #64748b;
-  font-size: 0.72rem;
+  color: #475569;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  margin-top: 0.2rem;
 }
 
-.inline-form-panel {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.inline-form-header {
+.filters {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.7rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-.inline-form-header h3 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0f172a;
-  font-size: 1rem;
-  font-weight: 800;
-  margin-bottom: 0.2rem;
-}
-
-.inline-form-header p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.84rem;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-}
-
-.field.full,
-.checkbox.full {
-  grid-column: 1 / -1;
-}
-
-.field label {
-  margin-bottom: 0.4rem;
-  font-weight: 700;
-  font-size: 0.82rem;
-  color: #334155;
+.filters input {
+  flex: 1;
+  min-width: 230px;
 }
 
 input,
 textarea,
 select {
   width: 100%;
-  padding: 0.66rem 0.85rem;
+  padding: 0.68rem 0.85rem;
   border: 1px solid #dbe3eb;
   border-radius: 12px;
-  font-size: 0.92rem;
-  font-family: 'DM Sans', sans-serif;
   background: #ffffff;
   color: #0f172a;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
 }
 
 input:focus,
@@ -1653,286 +1273,10 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
 }
 
-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  padding-right: 2.25rem;
-  cursor: pointer;
-}
-
-select.is-placeholder {
-  color: #94a3b8;
-}
-
-select option {
-  color: #0f172a;
-}
-
-select option[disabled] {
-  color: #94a3b8;
-}
-
-.checkbox {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: #334155;
-  font-weight: 600;
-}
-
-.checkbox input {
-  width: auto;
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-bottom: 1rem;
-}
-
-.filters input {
-  flex: 1;
-  min-width: 220px;
-}
-
-.filters select {
-  width: auto;
-  min-width: 160px;
-}
-
-.actions {
-  display: flex;
-  gap: 0.6rem;
-  margin-top: 1.25rem;
-  flex-wrap: wrap;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-success,
-.btn-danger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  padding: 0.62rem 1.05rem;
-  cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 800;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  transition: opacity 0.15s, background 0.15s, border-color 0.15s, transform 0.15s;
-}
-
-.btn-primary {
-  background: #0f172a;
-  color: white;
-}
-
-.btn-secondary {
-  background: #f8fafc;
-  color: #334155;
-  border-color: #e2e8f0;
-}
-
-.btn-success {
-  background: #10b981;
-  color: white;
-}
-
-.btn-danger {
-  background: #fef2f2;
-  color: #b91c1c;
-  border-color: #fecaca;
-}
-
-.btn-primary:hover:not(:disabled),
-.btn-success:hover:not(:disabled),
-.btn-danger:hover:not(:disabled),
-.btn-secondary:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f1f5f9;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #fee2e2;
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-success:disabled,
-.btn-danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.small {
-  padding: 0.42rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-.simple-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.simple-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-  border-radius: 16px;
-  transition: all 0.15s ease;
-}
-
-.simple-item:hover {
-  background: #ffffff;
-  border-color: #bbf7d0;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-}
-
-.item-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-  min-width: 0;
-}
-
-.item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: #0f172a;
-  color: #6ee7b7;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-weight: 900;
-}
-
-.item-main h3 {
-  margin: 0 0 0.25rem;
-  color: #0f172a;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 800;
-}
-
-.item-main p {
-  color: #64748b;
-  margin: 0 0 0.55rem;
-  font-size: 0.86rem;
-  line-height: 1.4;
-}
-
-.item-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.item-meta span {
-  background: #ffffff;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  padding: 0.22rem 0.55rem;
-  font-size: 0.74rem;
-  font-weight: 800;
-}
-
-.item-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-
-.call-actions {
-  max-width: 280px;
-}
-
-.user-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
-.action-pill {
-  border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0.36rem 0.75rem;
-  cursor: pointer;
-  font-size: 0.76rem;
-  font-weight: 800;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, transform 0.15s;
-}
-
-.action-pill:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.action-pill.approve {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #a7f3d0;
-}
-
-.action-pill.approve:hover:not(:disabled) {
-  background: #10b981;
-  color: #ffffff;
-  border-color: #10b981;
-}
-
-.action-pill.reject {
-  background: #ffffff;
-  color: #475569;
-  border-color: #cbd5e1;
-}
-
-.action-pill.reject:hover:not(:disabled) {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #94a3b8;
-}
-
-.action-pill.delete {
-  background: #fffafa;
-  color: #b91c1c;
-  border-color: #fecaca;
-}
-
-.action-pill.delete:hover:not(:disabled) {
-  background: #dc2626;
-  color: #ffffff;
-  border-color: #dc2626;
-}
-
-.action-pill:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
+.small-select {
+  min-width: 150px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
 }
 
 .table-wrap {
@@ -1947,9 +1291,9 @@ table {
 
 th,
 td {
-  text-align: left;
-  padding: 0.82rem 1rem;
+  padding: 0.85rem 0.9rem;
   border-bottom: 1px solid #eef2f7;
+  text-align: left;
   vertical-align: middle;
 }
 
@@ -1957,220 +1301,330 @@ th {
   background: #f8fafc;
   color: #64748b;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.08em;
 }
 
-tbody tr {
-  transition: background 0.15s;
-}
-
-tbody tr:hover {
-  background: #fbfdfc;
-}
-
-.assign-cell {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.assign-cell select {
-  min-width: 160px;
-}
-
-.tag {
+.badge {
   display: inline-flex;
-  align-items: center;
-  background: #f8fafc;
-  color: #334155;
-  border: 1px solid #e2e8f0;
-  padding: 0.2rem 0.58rem;
   border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 800;
-  text-transform: capitalize;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.22rem 0.72rem;
-  font-size: 0.76rem;
-  font-weight: 800;
-  text-transform: capitalize;
+  padding: 0.24rem 0.68rem;
   border: 1px solid transparent;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: capitalize;
 }
 
-.status-active {
+.badge.green {
   background: #ecfdf5;
   color: #047857;
   border-color: #a7f3d0;
 }
 
-.status-pending {
+.badge.amber {
   background: #fffbeb;
   color: #b45309;
   border-color: #fde68a;
 }
 
-.status-rejected {
+.badge.red {
   background: #fef2f2;
   color: #b91c1c;
   border-color: #fecaca;
 }
 
-.status-default {
+.badge.grey {
   background: #f8fafc;
   color: #475569;
   border-color: #e2e8f0;
 }
 
-.muted {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem;
-  color: #64748b;
-}
-
-.loading {
-  color: #64748b;
-  padding: 2rem 0;
-}
-
-.empty {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #64748b;
-}
-
-.empty-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.empty h2 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0f172a;
-  margin-bottom: 0.5rem;
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgba(15, 23, 42, 0.58);
+.actions,
+.assign {
   display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.current-mentor {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.btn,
+.mini {
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  transition: all 0.15s ease;
+}
+
+.btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
+  min-height: 42px;
+  width: auto;
+  border-radius: 13px;
+  padding: 0.58rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.delete-modal {
-  width: 100%;
-  max-width: 460px;
-  background: #ffffff;
-  border-radius: 22px;
-  padding: 1.5rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.28);
+.btn.dark {
+  background: #0f172a;
+  color: #ffffff;
 }
 
-.modal-icon {
-  width: 42px;
-  height: 42px;
+.btn.light {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.mini {
   border-radius: 999px;
+  padding: 0.38rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.mini.approve {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.mini.reject {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.mini.delete {
   background: #fef2f2;
   color: #b91c1c;
-  border: 1px solid #fecaca;
+  border-color: #fecaca;
+}
+
+.mini.edit {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mentor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+
+.mentor-card {
   display: flex;
+  gap: 0.8rem;
   align-items: center;
-  justify-content: center;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 900;
-  margin-bottom: 1rem;
-}
-
-.delete-modal h3 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 0.45rem;
-}
-
-.modal-text {
-  color: #64748b;
-  font-size: 0.92rem;
-  line-height: 1.55;
-  margin: 0 0 1rem;
-}
-
-.delete-user-box {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
   padding: 1rem;
-  margin-bottom: 1rem;
 }
 
-.delete-user-box p {
-  margin: 0 0 0.45rem;
-  color: #334155;
-  font-size: 0.9rem;
-}
-
-.delete-user-box p:last-child {
-  margin-bottom: 0;
-}
-
-.delete-confirm-label {
-  display: block;
-  color: #334155;
-  font-size: 0.86rem;
-  font-weight: 700;
-  margin-bottom: 0.45rem;
-}
-
-.delete-confirm-input {
-  margin-bottom: 1rem;
-}
-
-.modal-actions {
+.mentor-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #0f172a;
+  color: #6ee7b7;
   display: flex;
-  justify-content: flex-end;
-  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.mentor-card strong,
+.mentor-card span {
+  display: block;
+}
+
+.mentor-card strong {
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.mentor-card span {
+  color: #64748b;
+  font-size: 0.86rem;
+  margin-top: 0.15rem;
+}
+
+.form-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-box h3 {
+  margin: 0 0 0.85rem;
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.form-grid label {
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.form-grid input,
+.form-grid textarea,
+.form-grid select {
+  margin-top: 0.35rem;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.list-item h3 {
+  margin: 0 0 0.25rem;
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.list-item p {
+  margin: 0 0 0.55rem;
+  color: #64748b;
+}
+
+.chips {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.chips span {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0.22rem 0.58rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.message {
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.message.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.message.success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.loading,
+.empty,
+.muted {
+  color: #64748b;
+}
+
+.loading,
+.empty {
+  padding: 2rem;
 }
 
 @media (max-width: 1100px) {
+  .kpi-grid,
+  .work-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mentor-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .page-header,
-  .section-heading,
-  .inline-form-header,
-  .simple-item {
+  .overview-panel,
+  .section-title,
+  .list-item {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .header-actions,
-  .section-actions,
-  .item-actions {
-    justify-content: flex-start;
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
   }
+}
 
-  .user-actions {
-    flex-wrap: wrap;
+@media (max-width: 700px) {
+  .kpi-grid,
+  .work-grid,
+  .mentor-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
