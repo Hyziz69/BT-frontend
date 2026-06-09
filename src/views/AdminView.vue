@@ -158,7 +158,21 @@
                 <tr v-for="user in filteredUsers" :key="user.id">
                   <td>{{ user.first_name }} {{ user.last_name }}</td>
                   <td>{{ user.email }}</td>
-                  <td><span class="tag">{{ user.account_type }}</span></td>
+                  <td>
+                  <select
+                    :value="user.account_type"
+                    @change="handleRoleChange(user, ($event.target as HTMLSelectElement).value)"
+                    class="role-select"
+                    :disabled="saving"
+                  >
+                    <option value="student">Student</option>
+                    <option value="mentor">Mentor</option>
+                    <option value="company_contact">Company contact</option>
+                    <option value="evaluator">Evaluator</option>
+                    <option value="nti_admin">NTI Admin</option>
+                    <option value="superadmin">Super Admin</option>
+                  </select>
+                </td>
                   <td>
                     <span class="status-badge" :class="statusClass(user.status)">
                       {{ user.status }}
@@ -477,7 +491,18 @@
                   <td><span class="mono">{{ application.id }}</span></td>
                   <td>{{ application.team?.name ?? '-' }}</td>
                   <td>{{ application.call?.title ?? '-' }}</td>
-                  <td><span class="tag">{{ application.status }}</span></td>
+                  <td>
+                    <select
+                      :value="application.status"
+                      @change="handleTransition(application, ($event.target as HTMLSelectElement).value)"
+                      class="role-select"
+                      :disabled="saving"
+                    >
+                      <option v-for="status in allStatuses" :key="status" :value="status">
+                        {{ status.replace(/_/g, ' ') }}
+                      </option>
+                    </select>
+                  </td>
                   <td>
                     <span v-if="application.mentorships?.length">
                       {{ application.mentorships.map((m) => mentorName(m.mentor)).join(', ') }}
@@ -574,6 +599,25 @@ import {
 } from '../api/admin'
 import { useAuthStore } from '../stores/auth'
 import AppLayout from '../components/AppLayout.vue'
+const allStatuses = [
+  'draft', 'submitted', 'formally_verified', 'in_evaluation',
+  'pending_supplement', 'approved', 'rejected', 'onboarding',
+  'active', 'paused', 'completed', 'archived'
+]
+
+async function handleTransition(application: AdminApplication, newStatus: string) {
+  if (newStatus === application.status) return
+  saving.value = true
+  try {
+    await adminApi.transitionApplication(application.id, newStatus)
+    successMessage.value = `Status updated to ${newStatus}.`
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
+}
 
 type SectionKey = 'users' | 'programs' | 'calls' | 'applications'
 
@@ -631,6 +675,19 @@ const filteredUsers = computed(() => {
     return matchesSearch && matchesStatus && matchesType
   })
 })
+
+async function handleRoleChange(user: AdminUser, role: string) {
+  saving.value = true
+  try {
+    await adminApi.updateUser(user.id, { account_type: role })
+    successMessage.value = `Role updated to ${role}.`
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
+}
 
 const navigationCards = computed(() => {
   if (!stats.value) {
@@ -1165,6 +1222,17 @@ onMounted(async () => {
   font-size: 0.78rem;
   font-weight: 800;
   margin-bottom: 0.75rem;
+}
+
+.role-select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: white;
+  cursor: pointer;
+  width: auto;
+  min-width: 140px;
 }
 
 .page-title {

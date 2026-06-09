@@ -20,11 +20,11 @@
         <!-- Program A — hidden for mentor -->
         <RouterLink v-if="!isMentor" to="/applications" class="nav-item">
           <span class="nav-icon">◎</span>
-          <span>Program A</span>
+          <span>{{ isEvaluator ? 'Applications' : 'Program A' }}</span>
         </RouterLink>
 
-        <!-- Program B — hidden for mentor -->
-        <RouterLink v-if="!isMentor" to="/challenges" class="nav-item">
+        <!-- Program B — hidden for mentor and evaluator -->
+        <RouterLink v-if="!isMentor && !isEvaluator" to="/challenges" class="nav-item">
           <span class="nav-icon">★</span>
           <span>Program B</span>
         </RouterLink>
@@ -60,6 +60,10 @@
         >
           <span class="nav-icon">★</span>
           <span>Admin</span>
+        </RouterLink>
+        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
+          <span class="nav-icon">◷</span>
+          <span>Activity Log</span>
         </RouterLink>
       </nav>
 
@@ -127,6 +131,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
+const isEvaluator = computed(() => user.value?.account_type === 'evaluator')
 
 const user = computed(() => authStore.user as any)
 

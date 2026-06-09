@@ -179,7 +179,7 @@
           </div>
         </div>
 
-        <div class="section" v-if="authStore.isAdmin">
+        <div class="section" v-if="authStore.isAdmin || authStore.user?.account_type === 'evaluator'">
           <h2>Change Status</h2>
           <div class="field">
             <select v-model="newStatus">
@@ -253,8 +253,26 @@ const missingCvs = computed(() => {
 })
 
 const allowedTransitions = computed(() => {
-  return (application.value as any)?.available_transitions ?? [];
-});
+  const role = authStore.user?.account_type
+  const transitions: Record<string, Record<string, string[]>> = {
+    nti_admin: {
+      submitted: ['formally_verified', 'rejected'],
+      formally_verified: ['in_evaluation', 'pending_supplement'],
+      in_evaluation: ['approved', 'rejected', 'pending_supplement'],
+      approved: ['onboarding'],
+      onboarding: ['active'],
+      active: ['paused', 'completed'],
+      paused: ['active', 'completed'],
+      completed: ['archived'],
+    },
+    evaluator: {
+      formally_verified: ['in_evaluation', 'pending_supplement'],
+      in_evaluation: ['pending_supplement'],
+    },
+  }
+  const roleKey = role === 'evaluator' ? 'evaluator' : 'nti_admin'
+  return transitions[roleKey]?.[application.value?.status ?? ''] ?? []
+})
 
 const activeMentorships = computed(() => {
   if (!application.value?.mentorships) return []

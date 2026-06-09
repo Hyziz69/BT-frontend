@@ -134,7 +134,7 @@
         </div>
 
         <!-- Evaluations -->
-        <div class="section" v-if="authStore.isAdmin || authStore.isEvaluator">
+        <div class="section" v-if="authStore.isAdmin || authStore.user?.account_type === 'evaluator' || authStore.user?.account_type === 'company_contact'">
           <div class="section-header">
             <h2>Evaluations</h2>
             <button v-if="!myEvaluation" @click="showEvalForm = true" class="btn-primary">
@@ -466,17 +466,35 @@ const isLeader = computed(() => {
 })
 
 const allowedTransitions = computed(() => {
-  const transitions: Record<string, string[]> = {
-    submitted: ['formally_verified', 'rejected'],
-    formally_verified: ['in_evaluation', 'pending_supplement'],
-    in_evaluation: ['approved', 'rejected', 'pending_supplement'],
-    approved: ['onboarding'],
-    onboarding: ['active'],
-    active: ['paused', 'completed'],
-    paused: ['active', 'completed'],
-    completed: ['archived'],
+  const role = authStore.user?.account_type
+  const status = application.value?.status ?? ''
+  const isProgramB = !!application.value?.challenge_id
+
+  const transitions: Record<string, Record<string, string[]>> = {
+    nti_admin: {
+      submitted: ['formally_verified', 'rejected'],
+      formally_verified: ['in_evaluation', 'pending_supplement'],
+      in_evaluation: ['approved', 'rejected', 'pending_supplement'],
+      approved: ['onboarding'],
+      onboarding: ['active'],
+      active: ['paused', 'completed'],
+      paused: ['active', 'completed'],
+      completed: ['archived'],
+    },
+    evaluator: {
+      formally_verified: ['in_evaluation', 'pending_supplement'],
+      in_evaluation: ['pending_supplement'],
+    },
+    company_contact: {
+      submitted: ['approved', 'rejected'],
+    },
   }
-  return transitions[application.value?.status ?? ''] ?? []
+
+  const roleKey = role === 'evaluator' ? 'evaluator'
+    : role === 'company_contact' ? 'company_contact'
+    : 'nti_admin'
+
+  return transitions[roleKey]?.[status] ?? []
 })
 
 async function handleSubmit() {

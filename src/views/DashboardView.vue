@@ -207,6 +207,55 @@
         </div>
       </template>
 
+      <!-- ============ EVALUATOR ============ -->
+      <template v-else-if="isEvaluator">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-icon">◎</span>
+            <div class="stat-info">
+              <span class="stat-label">Total Applications</span>
+              <span class="stat-value">{{ evaluatorApps.length }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">◉</span>
+            <div class="stat-info">
+              <span class="stat-label">Pending Review</span>
+              <span class="stat-value">{{ pendingReview.length }}</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <span class="stat-icon">✦</span>
+            <div class="stat-info">
+              <span class="stat-label">In Evaluation</span>
+              <span class="stat-value">{{ evaluatorApps.filter(a => a.status === 'in_evaluation').length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-row">
+          <div class="section-title">Pending review</div>
+          <RouterLink to="/applications" class="see-all">View all →</RouterLink>
+        </div>
+        <div v-if="pendingReview.length" class="card-list">
+          <RouterLink
+            v-for="app in pendingReview.slice(0, 5)"
+            :key="app.id"
+            :to="`/applications/${app.id}`"
+            class="row-card link"
+          >
+            <div class="row-main">
+              <strong>{{ app.team?.name ?? 'Team' }}</strong>
+              <span class="muted">{{ app.call?.program?.name ?? 'Program A' }}</span>
+            </div>
+            <span class="pill" :class="appStatusClass(app.status)">{{ app.status.replace(/_/g, ' ') }}</span>
+          </RouterLink>
+        </div>
+        <div v-else class="empty-cta static">
+          No applications pending review.
+        </div>
+      </template>
+
       <!-- ============ ADMIN ============ -->
       <template v-else>
         <div class="stats-grid">
@@ -267,6 +316,7 @@ import { challengeApplicationsApi, challengesApi } from '../api/challenges'
 import { mentorApi } from '../api/mentor'
 import AppLayout from '../components/AppLayout.vue'
 import type { Application, Challenge, Mentorship } from '../types'
+import { applicationsApi } from '../api/applications'
 
 const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
@@ -277,6 +327,13 @@ const myApps = ref<Application[]>([])
 const openChallenges = ref<Challenge[]>([])
 const myChallenges = ref<Challenge[]>([])
 const myMentorships = ref<Mentorship[]>([])
+const evaluatorApps = ref<Application[]>([])
+const pendingReview = computed(() =>
+  evaluatorApps.value.filter(a =>
+    ['submitted', 'formally_verified', 'in_evaluation'].includes(a.status)
+  )
+)
+const isEvaluator = computed(() => role.value === 'evaluator')
 
 const activeMentees = computed(() => myMentorships.value.filter((m) => !m.ended_at).length)
 const totalConsultations = computed(() =>
@@ -307,6 +364,7 @@ const subtitle = computed(() => {
   if (isCompany.value) return "Here's what's happening with your challenges."
   if (isStudent.value) return "Here's what's happening with your team."
   if (isAdmin.value) return 'Platform overview and admin tools.'
+  if (isEvaluator.value) return 'Applications waiting for your review.'
   return 'Welcome to the NTI Portal.'
 })
 
@@ -315,6 +373,7 @@ const roleLabel = computed(() => {
     student: 'Student',
     mentor: 'Mentor',
     company_contact: 'Company',
+    evaluator: 'Evaluator',
     nti_admin: 'NTI Administrator',
     superadmin: 'Super Admin',
   }
@@ -365,6 +424,9 @@ onMounted(async () => {
     } else if (isMentor.value) {
       const res = await mentorApi.mentorships().catch(() => ({ mentorships: [] }))
       myMentorships.value = res.mentorships
+    } else if (isEvaluator.value) {
+      const res = await applicationsApi.getAll().catch(() => ({ data: [] }))
+      evaluatorApps.value = (res as any).data ?? (res as any).applications ?? []
     }
   } finally {
     loading.value = false

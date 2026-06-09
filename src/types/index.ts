@@ -89,13 +89,14 @@ export interface Application {
   decided_at: string | null
   created_at: string
   updated_at: string
+  challenge_id?: string | null
   team?: Team
   call?: Call
   challenge?: Challenge & { company?: { id: string; name: string } }
   documents?: Document[]
   milestones?: Milestone[]
-  mentorship?: Mentorship[];
-  available_transitions?: string[];
+  mentorship?: Mentorship[]
+  available_transitions?: string[]
   mentorships?: Array<{
     id: string
     mentor?: {

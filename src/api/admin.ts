@@ -166,8 +166,16 @@ export const adminApi = {
     return api.patch(`/admin/users/${id}/approve`).then((r) => r.data)
   },
 
+  updateUser(id: string, payload: { account_type?: string; status?: string }) {
+    return api.patch(`/admin/users/${id}`, payload).then((r) => r.data)
+  },
+
   rejectUser(id: string) {
     return api.patch(`/admin/users/${id}/reject`).then((r) => r.data)
+  },
+
+  transitionApplication(id: string, status: string) {
+    return api.patch(`/program-a/applications/${id}/transition`, { status }).then(r => r.data)
   },
 
   deleteUser(id: string) {
