@@ -52,6 +52,11 @@
           <span class="nav-icon">◈</span>
           <span>Teams</span>
         </RouterLink>
+
+        <RouterLink v-if="isAdmin" to="/admin/content" class="nav-item">
+          <span class="nav-icon">✎</span>
+          <span>Content</span>
+        </RouterLink>
         <RouterLink
           v-if="isAdmin"
           to="/admin"
