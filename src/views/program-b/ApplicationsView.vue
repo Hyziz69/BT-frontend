@@ -115,7 +115,7 @@ const showCreateForm = ref(false)
 
 const newApp = ref({
   call_id: '',
-  challenge_id: '', // ДОБАВЛЕНО
+  challenge_id: '', 
   motivation_letter: '',
   solution_proposal: '',
 })

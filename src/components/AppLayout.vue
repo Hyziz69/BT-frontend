@@ -7,23 +7,27 @@
       </div>
 
       <nav class="sidebar-nav">
+        <RouterLink to="/" class="nav-item">
+          <span class="nav-icon">⬡</span>
+          <span>Home</span>
+        </RouterLink>
+
         <RouterLink to="/dashboard" class="nav-item">
           <span class="nav-icon">⊞</span>
           <span>Dashboard</span>
         </RouterLink>
 
-        <!-- Program A -->
-        <RouterLink to="/applications" class="nav-item">
+        <!-- Program A — hidden for mentor -->
+        <RouterLink v-if="!isMentor" to="/applications" class="nav-item">
           <span class="nav-icon">◎</span>
           <span>Program A</span>
         </RouterLink>
 
-        <!-- Program B -->
-        <RouterLink to="/challenges" class="nav-item">
+        <!-- Program B — hidden for mentor -->
+        <RouterLink v-if="!isMentor" to="/challenges" class="nav-item">
           <span class="nav-icon">★</span>
           <span>Program B</span>
         </RouterLink>
-
 
         <!-- Student only -->
         <RouterLink v-if="isStudent" :to="teamLink" class="nav-item">

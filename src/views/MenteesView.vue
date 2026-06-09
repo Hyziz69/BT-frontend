@@ -16,36 +16,69 @@
         You have no mentees yet. Once an admin assigns you to a project, it will appear here.
       </div>
 
-      <div v-else class="mentee-list">
-        <RouterLink
-          v-for="m in mentorships"
-          :key="m.id"
-          :to="`/mentorships/${m.id}`"
-          class="mentee-card"
-        >
-          <div class="mentee-main">
-            <strong>{{ m.application?.team?.name ?? 'Team' }}</strong>
-            <span class="muted">{{ projectLabel(m) }}</span>
+      <template v-else>
+        <!-- Program A -->
+        <div v-if="programAMentorships.length > 0" class="program-section">
+          <div class="program-label">
+            Program A
           </div>
-          <div class="mentee-right">
-            <span class="pill" :class="m.ended_at ? 'grey' : 'green'">{{ m.ended_at ? 'Ended' : 'Active' }}</span>
-            <span class="consults">{{ m.consultations_count ?? 0 }} consultation(s)</span>
-            <span class="arrow">→</span>
+          <div class="mentee-list">
+            <RouterLink v-for="m in programAMentorships" :key="m.id" :to="`/mentorships/${m.id}`" class="mentee-card">
+              <div class="mentee-main">
+                <strong>{{ m.application?.team?.name ?? 'Team' }}</strong>
+                <span class="muted">{{ projectLabel(m) }}</span>
+              </div>
+              <div class="mentee-right">
+                <span class="pill" :class="m.ended_at ? 'grey' : 'green'">{{ m.ended_at ? 'Ended' : 'Active' }}</span>
+                <span class="consults">{{ m.consultations_count ?? 0 }} consultation(s)</span>
+                <span class="arrow">→</span>
+              </div>
+            </RouterLink>
           </div>
-        </RouterLink>
-      </div>
+        </div>
+
+        <!-- Program B -->
+        <div v-if="programBMentorships.length > 0" class="program-section">
+          <div class="program-label">
+            Program B
+          </div>
+          <div class="mentee-list">
+            <RouterLink v-for="m in programBMentorships" :key="m.id" :to="`/mentorships/${m.id}`" class="mentee-card">
+              <div class="mentee-main">
+                <strong>{{ m.application?.team?.name ?? 'Team' }}</strong>
+                <span class="muted">{{ projectLabel(m) }}</span>
+              </div>
+              <div class="mentee-right">
+                <span class="pill" :class="m.ended_at ? 'grey' : 'green'">{{ m.ended_at ? 'Ended' : 'Active' }}</span>
+                <span class="consults">{{ m.consultations_count ?? 0 }} consultation(s)</span>
+                <span class="arrow">→</span>
+              </div>
+            </RouterLink>
+          </div>
+        </div>
+      </template>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { mentorApi } from '../api/mentor'
 import AppLayout from '../components/AppLayout.vue'
 import type { Mentorship } from '../types'
 
+const router = useRouter()
 const loading = ref(true)
 const mentorships = ref<Mentorship[]>([])
+
+const programAMentorships = computed(() =>
+  mentorships.value.filter(m => !m.application?.challenge)
+)
+
+const programBMentorships = computed(() =>
+  mentorships.value.filter(m => !!m.application?.challenge)
+)
 
 function projectLabel(m: Mentorship): string {
   return (
@@ -81,6 +114,33 @@ onMounted(async () => {
 .state { color: #8892a4; padding: 2rem 0; }
 .state.empty { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 10px; padding: 2rem; text-align: center; }
 
+
+
+.program-section { margin-bottom: 2rem; }
+
+.program-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #16a34a;
+  margin-bottom: 0.75rem;
+}
+
+.program-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.badge-a { background: #f0fdf4; color: #16a34a; border: 1px solid #6ee7b7; }
+.badge-b { background: #eff6ff; color: #2563eb; border: 1px solid #93c5fd; }
 .mentee-list { display: flex; flex-direction: column; gap: 0.75rem; }
 .mentee-card {
   background: #fff; border-radius: 12px; padding: 1.1rem 1.4rem;

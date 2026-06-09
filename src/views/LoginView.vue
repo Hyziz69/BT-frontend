@@ -12,14 +12,16 @@
           <input v-model="form.email" type="email" placeholder="your@email.com" required />
         </div>
         <div class="field">
-          <label>Password</label>
+          <div class="label-row">
+            <label>Password</label>
+            <RouterLink to="/forgot-password" class="forgot-link">Forgot password?</RouterLink>
+          </div>
           <input v-model="form.password" type="password" placeholder="••••••••" required />
         </div>
         <p v-if="error" class="error">{{ error }}</p>
         <button type="submit" :disabled="loading">
           {{ loading ? 'Signing in...' : 'Sign In' }}
         </button>
-        <p class="auth-link forgot"><RouterLink to="/forgot-password">Forgot password?</RouterLink></p>
         <p class="auth-link">Don't have an account? <RouterLink to="/register">Sign up</RouterLink></p>
       </form>
     </div>
@@ -74,6 +76,23 @@ async function handleLogin() {
   width: 100%;
   max-width: 420px;
 }
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.forgot-link {
+  font-size: 0.8rem;
+  color: #8892a4;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.forgot-link:hover { color: #0f1117; }
 
 .brand {
   display: flex;
