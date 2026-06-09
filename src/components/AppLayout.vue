@@ -61,10 +61,6 @@
           <span class="nav-icon">★</span>
           <span>Admin</span>
         </RouterLink>
-        <RouterLink v-if="isAdmin" to="/admin/activity" class="nav-item">
-          <span class="nav-icon">◷</span>
-          <span>Activity Log</span>
-        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">
