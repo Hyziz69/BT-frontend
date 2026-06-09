@@ -421,6 +421,74 @@
           </div>
         </section>
       </div>
+      <!-- GDPR -->
+<div class="grid">
+  <section class="card">
+    <div class="card-header">
+      <h3>Data export</h3>
+      <p>Download a copy of all your personal data stored in the system.</p>
+    </div>
+    <p style="color:#8892a4; font-size:0.88rem; margin-bottom:1rem;">
+      Your export will include your profile, applications, team memberships, mentorships and notifications as a JSON file.
+    </p>
+    <button class="secondary-btn" :disabled="exportingData" @click="exportData">
+      {{ exportingData ? 'Preparing...' : '↓ Download my data' }}
+    </button>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h3>Account deletion</h3>
+      <p>Request permanent deletion of your account and associated data.</p>
+    </div>
+    <div v-if="account?.status === 'pending_deletion'" style="background:#fef3c7; border:1px solid #fcd34d; border-radius:10px; padding:1rem; margin-bottom:1rem;">
+      <strong style="color:#92400e;">Deletion request pending</strong>
+      <p style="color:#92400e; font-size:0.85rem; margin:0.25rem 0 0;">An admin will process your request. You can cancel it below.</p>
+    </div>
+    <p v-else style="color:#8892a4; font-size:0.88rem; margin-bottom:1rem;">
+      This will request deletion of your account. An admin must approve the request. Your data will be anonymized upon approval.
+    </p>
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+      <button
+        v-if="account?.status !== 'pending_deletion'"
+        class="danger-btn"
+        :disabled="requestingDeletion"
+        @click="showDeletionConfirm = true"
+      >
+        {{ requestingDeletion ? 'Requesting...' : 'Request account deletion' }}
+      </button>
+      <button
+        v-else
+        class="secondary-btn"
+        :disabled="requestingDeletion"
+        @click="cancelDeletion"
+      >
+        {{ requestingDeletion ? 'Cancelling...' : 'Cancel deletion request' }}
+      </button>
+    </div>
+  </section>
+</div>
+
+    <!-- Deletion confirm modal -->
+    <div v-if="showDeletionConfirm" class="modal-overlay" @click.self="showDeletionConfirm = false">
+      <div class="modal">
+        <div class="modal-icon-danger">!</div>
+        <h3>Request account deletion?</h3>
+        <p>Your account will be marked for deletion. An admin must approve it. You can cancel this request at any time before approval.</p>
+        <p style="margin-top:0.5rem;">Type <strong>delete</strong> to confirm:</p>
+        <input v-model="deletionConfirmText" type="text" placeholder="delete" style="margin:0.75rem 0;" />
+        <div class="modal-actions">
+          <button class="secondary-btn" @click="showDeletionConfirm = false">Cancel</button>
+          <button
+            class="danger-btn"
+            :disabled="deletionConfirmText.trim().toLowerCase() !== 'delete' || requestingDeletion"
+            @click="requestDeletion"
+          >
+            Confirm request
+          </button>
+        </div>
+      </div>
+    </div>
     </div>
   </AppLayout>
 </template>
@@ -451,6 +519,55 @@ const successMessage = ref('')
 const skillInput = ref('')
 const avatarInput = ref<HTMLInputElement | null>(null)
 const cvInput = ref<HTMLInputElement | null>(null)
+const exportingData = ref(false)
+const requestingDeletion = ref(false)
+const showDeletionConfirm = ref(false)
+const deletionConfirmText = ref('')
+
+async function exportData() {
+  exportingData.value = true
+  try {
+    const response = await api.get('/gdpr/export', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `nti-personal-data-${new Date().toISOString().slice(0, 10)}.json`
+    link.click()
+    window.URL.revokeObjectURL(url)
+  } catch {
+    pageError.value = 'Failed to export data.'
+  } finally {
+    exportingData.value = false
+  }
+}
+
+async function requestDeletion() {
+  requestingDeletion.value = true
+  try {
+    await api.post('/gdpr/request-deletion')
+    showDeletionConfirm.value = false
+    deletionConfirmText.value = ''
+    successMessage.value = 'Deletion request submitted. An admin will process it shortly.'
+    await loadOverview()
+  } catch (e: any) {
+    pageError.value = e?.response?.data?.message ?? 'Failed to request deletion.'
+  } finally {
+    requestingDeletion.value = false
+  }
+}
+
+async function cancelDeletion() {
+  requestingDeletion.value = true
+  try {
+    await api.post('/gdpr/cancel-deletion')
+    successMessage.value = 'Deletion request cancelled.'
+    await loadOverview()
+  } catch (e: any) {
+    pageError.value = e?.response?.data?.message ?? 'Failed to cancel deletion request.'
+  } finally {
+    requestingDeletion.value = false
+  }
+}
 
 const phoneCountries = [
   { flag: '🇸🇰', code: '+421', name: 'Slovakia' },
@@ -1183,6 +1300,57 @@ button:disabled {
   font-weight: 800;
   text-decoration: none;
   margin-bottom: 0.55rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.modal h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f1117;
+  margin-bottom: 0.5rem;
+}
+
+.modal p { color: #6b7280; font-size: 0.9rem; margin: 0; }
+
+.modal-icon-danger {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 900;
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
 }
 
 .badges {

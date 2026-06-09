@@ -125,12 +125,13 @@
           <div class="filters">
             <input v-model="userSearch" type="text" placeholder="Search by name or email" />
 
-            <select v-model="userStatusFilter">
-              <option value="">All statuses</option>
-              <option value="pending">Pending</option>
-              <option value="active">Approved</option>
-              <option value="suspended">Rejected</option>
-            </select>
+           <select v-model="userStatusFilter">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="active">Approved</option>
+            <option value="suspended">Rejected</option>
+            <option value="pending_deletion">Pending deletion</option>
+          </select>
 
             <select v-model="userTypeFilter">
               <option value="">All types</option>
@@ -182,7 +183,7 @@
                   <td>
                     <div class="user-actions">
                       <button
-                        v-if="user.status !== 'active'"
+                        v-if="user.status !== 'active' && user.status !== 'pending_deletion'"
                         class="action-pill approve"
                         :disabled="saving"
                         @click="approveUser(user.id)"
@@ -191,12 +192,30 @@
                       </button>
 
                       <button
-                        v-if="user.status !== 'suspended'"
+                        v-if="user.status !== 'suspended' && user.status !== 'pending_deletion'"
                         class="action-pill reject"
                         :disabled="saving"
                         @click="rejectUser(user.id)"
                       >
                         Reject
+                      </button>
+
+                      <button
+                        v-if="user.status === 'pending_deletion'"
+                        class="action-pill approve"
+                        :disabled="saving"
+                        @click="approveDeletion(user.id)"
+                      >
+                        Approve deletion
+                      </button>
+
+                      <button
+                        v-if="user.status === 'pending_deletion'"
+                        class="action-pill reject"
+                        :disabled="saving"
+                        @click="rejectDeletion(user.id)"
+                      >
+                        Reject deletion
                       </button>
 
                       <button
@@ -675,6 +694,32 @@ const filteredUsers = computed(() => {
     return matchesSearch && matchesStatus && matchesType
   })
 })
+
+async function approveDeletion(id: string) {
+  saving.value = true
+  try {
+    await adminApi.approveDeletion(id)
+    successMessage.value = 'User data anonymized.'
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function rejectDeletion(id: string) {
+  saving.value = true
+  try {
+    await adminApi.rejectDeletion(id)
+    successMessage.value = 'Deletion request rejected.'
+    await loadAll()
+  } catch (e: any) {
+    handleApiError(e)
+  } finally {
+    saving.value = false
+  }
+}
 
 async function handleRoleChange(user: AdminUser, role: string) {
   saving.value = true

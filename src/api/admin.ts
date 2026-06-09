@@ -178,6 +178,13 @@ export const adminApi = {
     return api.patch(`/program-a/applications/${id}/transition`, { status }).then(r => r.data)
   },
 
+  approveDeletion(id: string) {
+  return api.post(`/admin/users/${id}/approve-deletion`).then(r => r.data)
+},
+rejectDeletion(id: string) {
+  return api.post(`/admin/users/${id}/reject-deletion`).then(r => r.data)
+},
+
   deleteUser(id: string) {
     return api.delete(`/admin/users/${id}`).then((r) => r.data)
   },
