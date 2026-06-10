@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <AppLayout>
     <div class="admin-page">
       <header class="hero">
         <div>
           <p class="eyebrow">Administration</p>
           <h1>Admin control center</h1>
-          <p>Manage platform users, time chapters, programs, applications and mentor work.</p>
+          <p>Manage users, teams, applications, programs, calls and mentors from one place.</p>
         </div>
 
         <button class="btn dark" type="button" :disabled="loading" @click="loadAll">
@@ -13,7 +13,7 @@
         </button>
       </header>
 
-                  <nav class="admin-tabs">
+      <nav class="admin-tabs">
         <RouterLink to="/admin" class="tab active">
           <span class="tab-icon">&#9733;</span>
           Admin Panel
@@ -65,81 +65,91 @@
           <div class="overview-note">
             <strong>Active project rule</strong>
             <span>
-              A team/person can join another call only when the previous active project does not overlap by time.
+              A team/person cannot be active in overlapping projects at the same time.
             </span>
           </div>
         </section>
 
-        <section class="kpi-grid">
-          <button class="kpi-card clickable" type="button" @click="scrollTo('users')">
-            <span class="kpi-top">
-              <span class="kpi-icon green">&#9679;</span>
-              <span>Users</span>
-            </span>
+        <section class="admin-shortcuts">
+          <button class="shortcut-card" type="button" @click="scrollTo('users')">
+            <span class="shortcut-icon">&#9679;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Users</span>
+              <h3>Manage users</h3>
+              <p>Approve accounts and manage roles.</p>
+            </div>
             <strong>{{ stat('users_count') }}</strong>
-            <small>{{ stat('pending_users_count') }} waiting approval</small>
           </button>
 
-          <button class="kpi-card clickable" type="button" @click="scrollTo('applications')">
-            <span class="kpi-top">
-              <span class="kpi-icon violet">&#10022;</span>
-              <span>Applications</span>
-            </span>
-            <strong>{{ stat('total_applications') }}</strong>
-            <small>{{ stat('applications_waiting_count') }} waiting review</small>
+          <button class="shortcut-card" type="button" @click="scrollTo('teams')">
+            <span class="shortcut-icon">&#9672;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Teams</span>
+              <h3>Open teams</h3>
+              <p>View members and open team detail pages.</p>
+            </div>
+            <strong>{{ teams.length }}</strong>
           </button>
 
-          <button class="kpi-card clickable" type="button" @click="scrollTo('calls')">
-            <span class="kpi-top">
-              <span class="kpi-icon amber">&#8857;</span>
-              <span>Calls</span>
-            </span>
-            <strong>{{ stat('total_calls') }}</strong>
-            <small>{{ stat('open_calls') }} currently open</small>
+          <button class="shortcut-card" type="button" @click="scrollTo('applications')">
+            <span class="shortcut-icon">&#10022;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Applications</span>
+              <h3>Review applications</h3>
+              <p>Open applications, statuses, budget and mentors.</p>
+            </div>
+            <strong>{{ filteredApplications.length }}</strong>
           </button>
 
-          <button class="kpi-card clickable" type="button" @click="scrollTo('mentors')">
-            <span class="kpi-top">
-              <span class="kpi-icon cyan">&#9733;</span>
-              <span>Mentors</span>
-            </span>
-            <strong>{{ mentors.length }}</strong>
-            <small>{{ activeMentors.length }} active mentors</small>
-          </button>
-        </section>
-
-        <section class="work-grid">
-          <button class="work-card" type="button" @click="scrollTo('programs')">
-            <div>
-              <h3>Programs</h3>
-              <p>Program A / Program B settings and team size limits.</p>
+          <button class="shortcut-card" type="button" @click="scrollTo('programs')">
+            <span class="shortcut-icon">&#9635;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Programs</span>
+              <h3>Manage programs</h3>
+              <p>Program A / Program B settings and limits.</p>
             </div>
             <strong>{{ stat('active_programs') }}/{{ stat('total_programs') }}</strong>
           </button>
 
-          <button class="work-card warning" type="button" @click="scrollTo('calls')">
-            <div>
+          <button class="shortcut-card warning-card" type="button" @click="scrollTo('calls')">
+            <span class="shortcut-icon">&#8857;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Calls</span>
               <h3>Time chapters</h3>
-              <p>Calls control the time window for applications and project overlap.</p>
+              <p>Open and close application call windows.</p>
             </div>
             <strong>{{ stat('open_calls') }}</strong>
           </button>
 
-          <button class="work-card danger" type="button" @click="scrollTo('applications')">
-            <div>
-              <h3>Busy teams</h3>
-              <p>Teams that should not be assigned to another overlapping project.</p>
+          <button class="shortcut-card success-card" type="button" @click="scrollTo('mentors')">
+            <span class="shortcut-icon">&#9733;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Mentors</span>
+              <h3>Check mentors</h3>
+              <p>View active mentors and assignments.</p>
+            </div>
+            <strong>{{ activeMentors.length }}</strong>
+          </button>
+
+          <button class="shortcut-card danger-card" type="button" @click="scrollTo('applications')">
+            <span class="shortcut-icon">!</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Busy teams</span>
+              <h3>Blocked teams</h3>
+              <p>Teams blocked by active or overlapping projects.</p>
             </div>
             <strong>{{ stat('teams_with_active_projects_count') }}</strong>
           </button>
 
-          <div class="work-card done">
-            <div>
-              <h3>Completed</h3>
-              <p>Completed or archived applications do not block future calls.</p>
+          <button class="shortcut-card done-card" type="button" @click="scrollTo('applications')">
+            <span class="shortcut-icon">&#10003;</span>
+            <div class="shortcut-body">
+              <span class="shortcut-label">Completed</span>
+              <h3>Finished projects</h3>
+              <p>Completed applications do not block future calls.</p>
             </div>
             <strong>{{ stat('completed_applications') }}</strong>
-          </div>
+          </button>
         </section>
 
         <section ref="usersSection" class="panel">
@@ -253,6 +263,58 @@
 
                 <tr v-if="!filteredUsers.length">
                   <td colspan="6" class="muted">No users found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section ref="teamsSection" class="panel">
+          <div class="section-title">
+            <div>
+              <h2>Teams</h2>
+              <p>View all teams and open team detail pages.</p>
+            </div>
+            <span class="counter">{{ filteredTeams.length }} shown</span>
+          </div>
+
+          <div class="filters">
+            <input v-model="teamSearch" type="text" placeholder="Search team..." />
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Team</th>
+                  <th>Leader</th>
+                  <th>Members</th>
+                  <th>Created</th>
+                  <th>Open</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-for="team in filteredTeams" :key="team.id">
+                  <td>
+                    <RouterLink class="table-link" :to="`/teams/${team.id}`">
+                      {{ team.name }}
+                    </RouterLink>
+                  </td>
+
+                  <td>{{ leaderName(team) }}</td>
+                  <td>{{ team.members_count ?? team.member_count ?? team.members?.length ?? 0 }}</td>
+                  <td>{{ formatDate(team.created_at) }}</td>
+
+                  <td>
+                    <RouterLink class="mini edit" :to="`/teams/${team.id}`">
+                      Open team
+                    </RouterLink>
+                  </td>
+                </tr>
+
+                <tr v-if="!filteredTeams.length">
+                  <td colspan="5" class="muted">No teams found.</td>
                 </tr>
               </tbody>
             </table>
@@ -437,7 +499,7 @@
                 <div class="chips">
                   <span>{{ call.program?.name || 'Program' }}</span>
                   <span>{{ cleanStatus(call.status) }}</span>
-                  <span>{{ formatDate(call.opens_at) }} > {{ formatDate(call.closes_at) }}</span>
+                  <span>{{ formatDate(call.opens_at) }} - {{ formatDate(call.closes_at) }}</span>
                 </div>
               </div>
 
@@ -504,13 +566,21 @@
                   <th>Status</th>
                   <th>Budget</th>
                   <th>Mentor</th>
+                  <th>Open</th>
                 </tr>
               </thead>
 
               <tbody>
                 <tr v-for="application in filteredApplications" :key="application.id">
                   <td class="team-cell">
-                    <strong>{{ application.team?.name || 'Team' }}</strong>
+                    <RouterLink
+                      v-if="application.team?.id"
+                      class="table-link"
+                      :to="`/teams/${application.team.id}`"
+                    >
+                      {{ application.team?.name || 'Team' }}
+                    </RouterLink>
+                    <strong v-else>Team</strong>
                   </td>
 
                   <td class="project-cell">
@@ -581,10 +651,16 @@
                       Current: {{ currentMentorName(application) }}
                     </small>
                   </td>
+
+                  <td>
+                    <RouterLink class="mini edit" :to="applicationLink(application)">
+                      Open application
+                    </RouterLink>
+                  </td>
                 </tr>
 
                 <tr v-if="!filteredApplications.length">
-                  <td colspan="6" class="muted">No applications found.</td>
+                  <td colspan="7" class="muted">No applications found.</td>
                 </tr>
               </tbody>
             </table>
@@ -609,6 +685,7 @@ import {
 
 type ProgramItem = any
 type CallItem = any
+type TeamItem = any
 
 const authStore = useAuthStore()
 
@@ -620,17 +697,20 @@ const successMessage = ref('')
 
 const stats = ref<AdminDashboardStats | null>(null)
 const users = ref<AdminUser[]>([])
+const teams = ref<TeamItem[]>([])
 const programs = ref<ProgramItem[]>([])
 const calls = ref<CallItem[]>([])
 const applications = ref<AdminApplication[]>([])
 
 const usersSection = ref<HTMLElement | null>(null)
+const teamsSection = ref<HTMLElement | null>(null)
 const mentorsSection = ref<HTMLElement | null>(null)
 const programsSection = ref<HTMLElement | null>(null)
 const callsSection = ref<HTMLElement | null>(null)
 const applicationsSection = ref<HTMLElement | null>(null)
 
 const userSearch = ref('')
+const teamSearch = ref('')
 const userStatusFilter = ref('')
 const userTypeFilter = ref('')
 const applicationSearch = ref('')
@@ -693,6 +773,25 @@ const filteredUsers = computed(() => {
   })
 })
 
+const filteredTeams = computed(() => {
+  const search = teamSearch.value.trim().toLowerCase()
+
+  return teams.value.filter((team) => {
+    const text = [
+      team.name,
+      team.leader?.first_name,
+      team.leader?.last_name,
+      team.leader?.email,
+      ...(team.members ?? []).map((member: any) => `${member.first_name} ${member.last_name} ${member.email}`),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return !search || text.includes(search)
+  })
+})
+
 const filteredApplications = computed(() => {
   const search = applicationSearch.value.trim().toLowerCase()
 
@@ -732,17 +831,25 @@ async function loadAll() {
   successMessage.value = ''
 
   try {
-    const [statsResponse, usersResponse, programsResponse, callsResponse, applicationsResponse] =
-      await Promise.all([
-        adminApi.getDashboard(),
-        adminApi.getUsers(),
-        adminApi.getPrograms(),
-        adminApi.getCalls(),
-        adminApi.getApplications(),
-      ])
+    const [
+      statsResponse,
+      usersResponse,
+      teamsResponse,
+      programsResponse,
+      callsResponse,
+      applicationsResponse,
+    ] = await Promise.all([
+      adminApi.getDashboard(),
+      adminApi.getUsers(),
+      adminApi.getTeams(),
+      adminApi.getPrograms(),
+      adminApi.getCalls(),
+      adminApi.getApplications(),
+    ])
 
     stats.value = statsResponse
     users.value = usersResponse
+    teams.value = teamsResponse
     programs.value = programsResponse
     calls.value = callsResponse
     applications.value = applicationsResponse
@@ -767,9 +874,10 @@ async function loadAll() {
   }
 }
 
-function scrollTo(section: 'users' | 'mentors' | 'programs' | 'calls' | 'applications') {
+function scrollTo(section: 'users' | 'teams' | 'mentors' | 'programs' | 'calls' | 'applications') {
   const map = {
     users: usersSection,
+    teams: teamsSection,
     mentors: mentorsSection,
     programs: programsSection,
     calls: callsSection,
@@ -966,7 +1074,6 @@ async function changeApplicationStatus(application: AdminApplication) {
 
   await runAction(async () => {
     await adminApi.updateApplicationStatus(application.id, status)
-
     successMessage.value = 'Application status updated.'
     await loadAll()
   })
@@ -998,6 +1105,28 @@ async function runAction(callback: () => Promise<void>) {
   }
 }
 
+function leaderName(team: TeamItem): string {
+  if (team.leader) {
+    return `${team.leader.first_name ?? ''} ${team.leader.last_name ?? ''}`.trim() || team.leader.email || '-'
+  }
+
+  const leader = team.members?.find((member: any) => member.id === team.leader_id)
+
+  if (leader) {
+    return `${leader.first_name ?? ''} ${leader.last_name ?? ''}`.trim() || leader.email || '-'
+  }
+
+  return '-'
+}
+
+function applicationLink(application: AdminApplication): string {
+  if (application.call?.program?.type === 'program_b' || application.challenge_id) {
+    return `/program-b/applications/${application.id}`
+  }
+
+  return `/applications/${application.id}`
+}
+
 function currentMentorName(application: AdminApplication): string {
   const active =
     application.latest_mentorship ??
@@ -1022,9 +1151,13 @@ function statusClass(status: string): string {
 
 function applicationStatusClass(status: string): string {
   if (['approved', 'active', 'completed'].includes(status)) return 'green'
-  if (['submitted', 'formally_verified', 'in_evaluation', 'pending_supplement', 'onboarding', 'paused'].includes(status)) {
+
+  if (
+    ['submitted', 'formally_verified', 'in_evaluation', 'pending_supplement', 'onboarding', 'paused'].includes(status)
+  ) {
     return 'amber'
   }
+
   if (status === 'rejected') return 'red'
 
   return 'grey'
@@ -1222,163 +1355,99 @@ function toLocalInput(value?: string | null): string {
   margin-bottom: 0.25rem;
 }
 
-.kpi-grid,
-.work-grid {
+.admin-shortcuts {
   display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
-  margin-bottom: 1.3rem;
+  margin-bottom: 1.4rem;
 }
 
-.kpi-grid {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.work-grid {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.kpi-card,
-.work-card {
-  background: #ffffff;
+.shortcut-card {
+  min-height: 165px;
   border: 1px solid #dbe3eb;
-  border-radius: 20px;
-  padding: 1rem;
+  border-radius: 22px;
+  background: #ffffff;
+  padding: 1.15rem;
   text-align: left;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-}
-
-.kpi-card {
-  position: relative;
-  overflow: hidden;
-  min-height: 155px;
-}
-
-.kpi-card::after {
-  content: "";
-  position: absolute;
-  top: -34px;
-  right: -34px;
-  width: 105px;
-  height: 105px;
-  border-radius: 999px;
-  opacity: 0.18;
-  pointer-events: none;
-}
-
-.kpi-card:nth-child(1)::after {
-  background: #10b981;
-}
-
-.kpi-card:nth-child(2)::after {
-  background: #8b5cf6;
-}
-
-.kpi-card:nth-child(3)::after {
-  background: #f59e0b;
-}
-
-.kpi-card:nth-child(4)::after {
-  background: #06b6d4;
-}
-
-.kpi-card.clickable,
-.work-card {
   cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: start;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
   transition: all 0.15s ease;
 }
 
-.kpi-card.clickable:hover,
-.work-card:hover {
+.shortcut-card:hover {
   transform: translateY(-2px);
   border-color: #6ee7b7;
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
 }
 
-.kpi-card:focus,
-.kpi-card:focus-visible,
-.work-card:focus,
-.work-card:focus-visible {
+.shortcut-card:focus,
+.shortcut-card:focus-visible {
   outline: none;
   border-color: #6ee7b7;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
-.kpi-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #64748b;
-  font-size: 0.8rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.kpi-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+.shortcut-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
   background: #0f172a;
   color: #6ee7b7;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.kpi-icon,
-.kpi-top,
-.kpi-card strong,
-.kpi-card small {
-  position: relative;
-  z-index: 1;
-}
-
-.kpi-card strong,
-.work-card strong {
-  display: block;
-  margin-top: 1rem;
-  color: #0f172a;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 2rem;
   font-weight: 900;
+  line-height: 1;
 }
 
-.kpi-card small {
+.shortcut-label {
   display: block;
-  margin-top: 0.2rem;
-  color: #3b5d88;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
 }
 
-.work-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  min-height: 130px;
-}
-
-.work-card h3 {
+.shortcut-body h3 {
   margin: 0 0 0.35rem;
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 900;
 }
 
-.work-card p {
+.shortcut-body p {
   margin: 0;
-  color: #64748b;
+  color: #4f6687;
   line-height: 1.45;
   font-size: 0.9rem;
 }
 
-.work-card.warning {
+.shortcut-card strong {
+  color: #020617;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.warning-card {
   background: #fffbeb;
 }
 
-.work-card.danger {
-  background: #fef2f2;
+.success-card,
+.done-card {
+  background: #ecfdf5;
 }
 
-.work-card.done {
-  background: #ecfdf5;
+.danger-card {
+  background: #fef2f2;
 }
 
 .section-title {
@@ -1479,7 +1548,7 @@ th {
 }
 
 .applications-table {
-  min-width: 1100px;
+  min-width: 1180px;
 }
 
 .team-cell {
@@ -1499,6 +1568,16 @@ th {
   white-space: nowrap;
   color: #0f172a;
   font-weight: 800;
+}
+
+.table-link {
+  color: #047857;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.table-link:hover {
+  text-decoration: underline;
 }
 
 .badge {
@@ -1578,7 +1657,7 @@ th {
   cursor: pointer;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
-  transition: all 0.15s ease;
+  text-decoration: none;
 }
 
 .btn {
@@ -1606,6 +1685,9 @@ th {
 }
 
 .mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 0.38rem 0.75rem;
   font-size: 0.75rem;
@@ -1810,10 +1892,9 @@ button:disabled {
   padding: 2rem;
 }
 
-@media (max-width: 1100px) {
-  .kpi-grid,
-  .work-grid {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 1200px) {
+  .admin-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mentor-grid {
@@ -1838,10 +1919,18 @@ button:disabled {
 }
 
 @media (max-width: 700px) {
-  .kpi-grid,
-  .work-grid,
+  .admin-shortcuts,
   .mentor-grid {
     grid-template-columns: 1fr;
+  }
+
+  .shortcut-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .shortcut-card strong {
+    grid-column: 1 / -1;
+    align-self: start;
   }
 }
 </style>
