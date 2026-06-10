@@ -273,7 +273,7 @@
           <div class="section-title">
             <div>
               <h2>Teams</h2>
-              <p>View all teams and open team detail pages.</p>
+              <p>Click a row to open team detail.</p>
             </div>
             <span class="counter">{{ filteredTeams.length }} shown</span>
           </div>
@@ -290,31 +290,27 @@
                   <th>Leader</th>
                   <th>Members</th>
                   <th>Created</th>
-                  <th>Open</th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr v-for="team in filteredTeams" :key="team.id">
+                <tr
+                  v-for="team in filteredTeams"
+                  :key="team.id"
+                  class="clickable-row"
+                  @click="openTeam(team)"
+                >
                   <td>
-                    <RouterLink class="table-link" :to="`/teams/${team.id}`">
-                      {{ team.name }}
-                    </RouterLink>
+                    <strong class="table-link">{{ team.name }}</strong>
                   </td>
 
                   <td>{{ leaderName(team) }}</td>
                   <td>{{ team.members_count ?? team.member_count ?? team.members?.length ?? 0 }}</td>
                   <td>{{ formatDate(team.created_at) }}</td>
-
-                  <td>
-                    <RouterLink class="mini edit" :to="`/teams/${team.id}`">
-                      Open team
-                    </RouterLink>
-                  </td>
                 </tr>
 
                 <tr v-if="!filteredTeams.length">
-                  <td colspan="5" class="muted">No teams found.</td>
+                  <td colspan="4" class="muted">No teams found.</td>
                 </tr>
               </tbody>
             </table>
@@ -536,7 +532,7 @@
           <div class="section-title">
             <div>
               <h2>Applications</h2>
-              <p>Review teams, budgets, statuses and mentor assignment.</p>
+              <p>Click a row to open application detail.</p>
             </div>
             <span class="counter">{{ filteredApplications.length }} shown</span>
           </div>
@@ -566,21 +562,20 @@
                   <th>Status</th>
                   <th>Budget</th>
                   <th>Mentor</th>
-                  <th>Open</th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr v-for="application in filteredApplications" :key="application.id">
+                <tr
+                  v-for="application in filteredApplications"
+                  :key="application.id"
+                  class="clickable-row"
+                  @click="openApplication(application)"
+                >
                   <td class="team-cell">
-                    <RouterLink
-                      v-if="application.team?.id"
-                      class="table-link"
-                      :to="`/teams/${application.team.id}`"
-                    >
+                    <strong class="table-link">
                       {{ application.team?.name || 'Team' }}
-                    </RouterLink>
-                    <strong v-else>Team</strong>
+                    </strong>
                   </td>
 
                   <td class="project-cell">
@@ -591,7 +586,7 @@
                     {{ application.call?.title || 'Call' }}
                   </td>
 
-                  <td>
+                  <td @click.stop>
                     <div class="status-editor">
                       <span class="badge" :class="applicationStatusClass(application.status)">
                         {{ cleanStatus(application.status) }}
@@ -628,7 +623,7 @@
                     {{ formatBudget(application.requested_budget) }}
                   </td>
 
-                  <td>
+                  <td @click.stop>
                     <div class="assign">
                       <select v-model="mentorSelects[application.id]" class="small-select mentor-select">
                         <option value="">Choose mentor</option>
@@ -651,16 +646,10 @@
                       Current: {{ currentMentorName(application) }}
                     </small>
                   </td>
-
-                  <td>
-                    <RouterLink class="mini edit" :to="applicationLink(application)">
-                      Open application
-                    </RouterLink>
-                  </td>
                 </tr>
 
                 <tr v-if="!filteredApplications.length">
-                  <td colspan="7" class="muted">No applications found.</td>
+                  <td colspan="6" class="muted">No applications found.</td>
                 </tr>
               </tbody>
             </table>
@@ -673,7 +662,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { useAuthStore } from '../stores/auth'
 import {
@@ -687,6 +676,7 @@ type ProgramItem = any
 type CallItem = any
 type TeamItem = any
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(true)
@@ -890,6 +880,14 @@ function scrollTo(section: 'users' | 'teams' | 'mentors' | 'programs' | 'calls' 
   })
 }
 
+function openTeam(team: TeamItem) {
+  router.push(`/teams/${team.id}`)
+}
+
+function openApplication(application: AdminApplication) {
+  router.push(applicationLink(application))
+}
+
 async function approveUser(id: string) {
   await runAction(async () => {
     await adminApi.approveUser(id)
@@ -923,9 +921,7 @@ async function deleteUser(user: AdminUser) {
 function handleRoleChange(user: AdminUser, event: Event) {
   const target = event.target as HTMLSelectElement | null
 
-  if (!target) {
-    return
-  }
+  if (!target) return
 
   changeRole(user, target.value)
 }
@@ -1205,7 +1201,7 @@ function toLocalInput(value?: string | null): string {
 
 <style scoped>
 .admin-page {
-  max-width: 1180px;
+  max-width: 1080px;
 }
 
 .hero {
@@ -1213,7 +1209,7 @@ function toLocalInput(value?: string | null): string {
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  padding: 1.5rem 0 1.2rem;
+  padding: 1rem 0 1rem;
   border-bottom: 1px solid #dbe3eb;
   margin-bottom: 1rem;
 }
@@ -1231,27 +1227,27 @@ function toLocalInput(value?: string | null): string {
   padding: 0.22rem 0.65rem;
   font-size: 0.74rem;
   font-weight: 800;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
 }
 
 .hero h1 {
   margin: 0 0 0.25rem;
   color: #0f1117;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 900;
 }
 
 .hero p {
   margin: 0;
   color: #64748b;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .admin-tabs {
   display: flex;
-  gap: 0.65rem;
-  margin-bottom: 1.25rem;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
@@ -1259,14 +1255,14 @@ function toLocalInput(value?: string | null): string {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  gap: 0.45rem;
-  padding: 0.58rem 1rem;
-  border-radius: 13px;
+  min-height: 38px;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
   background: #ffffff;
   color: #1f2a44;
   border: 1px solid #dbe3eb;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   line-height: 1;
   font-weight: 800;
   text-decoration: none;
@@ -1279,16 +1275,12 @@ function toLocalInput(value?: string | null): string {
   background: #0f172a;
   color: #6ee7b7;
   border-color: #0f172a;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
 }
 
 .tab-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  min-width: 16px;
-  font-size: 0.82rem;
+  width: 15px;
+  min-width: 15px;
+  font-size: 0.78rem;
   line-height: 1;
 }
 
@@ -1296,10 +1288,10 @@ function toLocalInput(value?: string | null): string {
 .panel {
   background: #ffffff;
   border: 1px solid #dbe3eb;
-  border-radius: 22px;
-  padding: 1.25rem;
-  margin-bottom: 1.3rem;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.05);
+  border-radius: 18px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 }
 
 .overview-panel {
@@ -1307,20 +1299,20 @@ function toLocalInput(value?: string | null): string {
   justify-content: space-between;
   gap: 1rem;
   background:
-    radial-gradient(circle at top right, rgba(110, 231, 183, 0.18), transparent 32%),
+    radial-gradient(circle at top right, rgba(110, 231, 183, 0.16), transparent 32%),
     #ffffff;
 }
 
 .overview-main {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .overview-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 17px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   background: #0f172a;
   color: #6ee7b7;
   display: flex;
@@ -1330,8 +1322,8 @@ function toLocalInput(value?: string | null): string {
 }
 
 .overview-main h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  margin: 0 0 0.2rem;
+  font-size: 1.08rem;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -1339,42 +1331,44 @@ function toLocalInput(value?: string | null): string {
 .overview-note span {
   margin: 0;
   color: #64748b;
+  font-size: 0.86rem;
 }
 
 .overview-note {
-  max-width: 380px;
+  max-width: 340px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  padding: 0.75rem 0.9rem;
 }
 
 .overview-note strong {
   display: block;
   color: #0f172a;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
+  font-size: 0.92rem;
 }
 
 .admin-shortcuts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.4rem;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
 }
 
 .shortcut-card {
-  min-height: 165px;
+  min-height: 132px;
   border: 1px solid #dbe3eb;
-  border-radius: 22px;
+  border-radius: 18px;
   background: #ffffff;
-  padding: 1.15rem;
+  padding: 0.9rem;
   text-align: left;
   cursor: pointer;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: start;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
   transition: all 0.15s ease;
 }
 
@@ -1391,9 +1385,9 @@ function toLocalInput(value?: string | null): string {
 }
 
 .shortcut-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
   background: #0f172a;
   color: #6ee7b7;
   display: flex;
@@ -1401,37 +1395,38 @@ function toLocalInput(value?: string | null): string {
   justify-content: center;
   font-weight: 900;
   line-height: 1;
+  font-size: 0.8rem;
 }
 
 .shortcut-label {
   display: block;
   color: #64748b;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
 }
 
 .shortcut-body h3 {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.25rem;
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 900;
 }
 
 .shortcut-body p {
   margin: 0;
   color: #4f6687;
-  line-height: 1.45;
-  font-size: 0.9rem;
+  line-height: 1.35;
+  font-size: 0.82rem;
 }
 
 .shortcut-card strong {
   color: #020617;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 2rem;
+  font-size: 1.65rem;
   font-weight: 900;
   white-space: nowrap;
   align-self: center;
@@ -1455,20 +1450,21 @@ function toLocalInput(value?: string | null): string {
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .section-title h2 {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.2rem;
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 900;
 }
 
 .section-title p {
   margin: 0;
   color: #64748b;
+  font-size: 0.88rem;
 }
 
 .counter {
@@ -1476,15 +1472,15 @@ function toLocalInput(value?: string | null): string {
   border: 1px solid #e2e8f0;
   color: #475569;
   border-radius: 999px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.78rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.74rem;
   font-weight: 800;
 }
 
 .filters {
   display: flex;
-  gap: 0.7rem;
-  margin-bottom: 1rem;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
 }
 
@@ -1497,13 +1493,13 @@ input,
 textarea,
 select {
   width: 100%;
-  padding: 0.68rem 0.85rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid #dbe3eb;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #ffffff;
   color: #0f172a;
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
 }
 
 input:focus,
@@ -1515,24 +1511,25 @@ select:focus {
 }
 
 .small-select {
-  min-width: 150px;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.82rem;
+  min-width: 140px;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.78rem;
 }
 
 .table-wrap {
   overflow-x: auto;
+  border-radius: 14px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.86rem;
 }
 
 th,
 td {
-  padding: 0.85rem 0.9rem;
+  padding: 0.65rem 0.7rem;
   border-bottom: 1px solid #eef2f7;
   text-align: left;
   vertical-align: middle;
@@ -1541,30 +1538,30 @@ td {
 th {
   background: #f8fafc;
   color: #64748b;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .applications-table {
-  min-width: 1180px;
+  min-width: 920px;
 }
 
 .team-cell {
-  min-width: 130px;
+  min-width: 120px;
 }
 
 .project-cell {
-  min-width: 160px;
-}
-
-.call-cell {
   min-width: 150px;
 }
 
+.call-cell {
+  min-width: 140px;
+}
+
 .budget-cell {
-  min-width: 120px;
+  min-width: 100px;
   white-space: nowrap;
   color: #0f172a;
   font-weight: 800;
@@ -1576,16 +1573,25 @@ th {
   text-decoration: none;
 }
 
-.table-link:hover {
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.clickable-row:hover {
+  background: #f8fafc;
+}
+
+.clickable-row:hover .table-link {
   text-decoration: underline;
 }
 
 .badge {
   display: inline-flex;
   border-radius: 999px;
-  padding: 0.24rem 0.68rem;
+  padding: 0.2rem 0.55rem;
   border: 1px solid transparent;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 900;
   text-transform: capitalize;
 }
@@ -1617,7 +1623,7 @@ th {
 .actions,
 .assign {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
   align-items: center;
 }
@@ -1625,30 +1631,30 @@ th {
 .status-editor {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  min-width: 190px;
+  gap: 0.35rem;
+  min-width: 160px;
 }
 
 .status-actions {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   flex-wrap: nowrap;
 }
 
 .status-select {
-  min-width: 155px;
+  min-width: 135px;
 }
 
 .mentor-select {
-  min-width: 170px;
+  min-width: 145px;
 }
 
 .current-mentor {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: 0.3rem;
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
 }
 
 .btn,
@@ -1664,11 +1670,11 @@ th {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
+  min-height: 38px;
   width: auto;
-  border-radius: 13px;
-  padding: 0.58rem 1rem;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.84rem;
   line-height: 1;
   white-space: nowrap;
 }
@@ -1689,8 +1695,8 @@ th {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0.38rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.32rem 0.65rem;
+  font-size: 0.72rem;
 }
 
 .mini.approve {
@@ -1724,24 +1730,24 @@ button:disabled {
 
 .mentor-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 0.7rem;
 }
 
 .mentor-card {
   display: flex;
-  gap: 0.8rem;
+  gap: 0.7rem;
   align-items: center;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 1rem;
+  border-radius: 14px;
+  padding: 0.8rem;
 }
 
 .mentor-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: #0f172a;
   color: #6ee7b7;
   display: flex;
@@ -1758,44 +1764,46 @@ button:disabled {
 .mentor-card strong {
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem;
 }
 
 .mentor-card span {
   color: #64748b;
-  font-size: 0.86rem;
-  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  margin-top: 0.12rem;
 }
 
 .form-box {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  border-radius: 16px;
+  padding: 0.9rem;
+  margin-bottom: 0.85rem;
 }
 
 .form-box h3 {
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.75rem;
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1rem;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .form-grid label {
   color: #334155;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
 }
 
 .form-grid input,
 .form-grid textarea,
 .form-grid select {
-  margin-top: 0.35rem;
+  margin-top: 0.3rem;
 }
 
 .full {
@@ -1815,40 +1823,42 @@ button:disabled {
 
 .form-actions {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 1rem;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.7rem;
 }
 
 .list-item {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.85rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 1rem;
+  border-radius: 16px;
+  padding: 0.9rem;
 }
 
 .list-item h3 {
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.2rem;
   color: #0f172a;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.98rem;
 }
 
 .list-item p {
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.45rem;
   color: #64748b;
+  font-size: 0.84rem;
 }
 
 .chips {
   display: flex;
-  gap: 0.45rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
 }
 
@@ -1857,16 +1867,16 @@ button:disabled {
   color: #475569;
   border: 1px solid #e2e8f0;
   border-radius: 999px;
-  padding: 0.22rem 0.58rem;
-  font-size: 0.74rem;
+  padding: 0.2rem 0.52rem;
+  font-size: 0.7rem;
   font-weight: 800;
 }
 
 .message {
-  border-radius: 14px;
-  padding: 0.85rem 1rem;
+  border-radius: 13px;
+  padding: 0.75rem 0.9rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .message.error {
@@ -1889,7 +1899,7 @@ button:disabled {
 
 .loading,
 .empty {
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 @media (max-width: 1200px) {
