@@ -9,7 +9,7 @@
             <p class="page-subtitle">Track your startup applications and pitch decks</p>
           </div>
         </div>
-        <button @click="showCreateForm = true" class="btn-primary">+ New Program B App</button>
+        <button v-if="isCompany" @click="showCreateForm = true" class="btn-primary">+ New Program B App</button>
       </div>
 
       <p v-if="pageError" class="error">{{ pageError }}</p>
@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.ts'
 import { applicationsBApi } from '@/api/program-b/applications.ts'
@@ -112,6 +112,7 @@ const creating = ref(false)
 const appError = ref<string | null>(null)
 const pageError = ref<string | null>(null)
 const showCreateForm = ref(false)
+const isCompany = computed(() => authStore.user?.account_type === 'company_contact')
 
 const newApp = ref({
   call_id: '',

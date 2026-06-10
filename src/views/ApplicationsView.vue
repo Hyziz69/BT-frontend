@@ -10,7 +10,7 @@
             <p class="page-subtitle">{{ isCompanyContact ? 'Browse and accept student project applications.' : 'Track your Program A applications' }}</p>
           </div>
         </div>
-        <button v-if="!isCompanyContact && !isMentor" @click="showCreateForm = true" class="btn-primary">+ New Application</button>
+        <button v-if="isStudent" @click="showCreateForm = true" class="btn-primary">+ New Application</button>
       </div>
 
       <p v-if="pageError" class="error">{{ pageError }}</p>
@@ -148,6 +148,7 @@ const authStore = useAuthStore()
 const teamsStore = useTeamsStore()
 const calls = ref<any[]>([])
 const isMentor = computed(() => authStore.user?.account_type === 'mentor')
+const isStudent = computed(() => authStore.user?.account_type === 'student')
 
 const applications = ref<Application[]>([])
 const loading = ref(false)

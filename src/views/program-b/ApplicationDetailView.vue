@@ -279,18 +279,20 @@ const activeMentorships = computed(() => {
   return application.value.mentorships.filter(m => !m.ended_at)
 })
 
-onMounted(async () => {
+async function loadApplication() {
   loading.value = true
   try {
     const id = route.params.id as string
     const appResponse = await applicationsBApi.getOne(id)
-    application.value = appResponse.data
-    milestones.value = application.value.milestones ?? []
+    application.value = (appResponse.data as any).application ?? appResponse.data
+    milestones.value = application.value?.milestones ?? []
   } finally {
     loading.value = false
   }
+}
 
-  // Загрузка менторов строго локализована и изолирована от глобального стора
+onMounted(async () => {
+  await loadApplication()
   if (authStore.isAdmin) {
     loadingMentors.value = true
     try {
@@ -334,6 +336,8 @@ async function handleEndMentorship(mentorshipId: string) {
   }
 }
 
+
+
 async function handleSubmit() {
   if (!application.value || missingCvs.value.length > 0) return
   submitting.value = true
@@ -352,10 +356,10 @@ async function handleTransition() {
   if (!application.value || !newStatus.value) return
   transitioning.value = true
   try {
-    const response = await applicationsBApi.transition(application.value.id, newStatus.value, decisionNotes.value, score.value)
-    application.value = response.data
+    await applicationsBApi.transition(application.value.id, newStatus.value, decisionNotes.value, score.value)
     newStatus.value = ''
     decisionNotes.value = ''
+    await loadApplication()
   } catch (e: unknown) {
     const apiError = e as ApiError
     alert(apiError.response?.data?.message ?? 'Transition failed')

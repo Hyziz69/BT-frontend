@@ -33,12 +33,8 @@
           <span>{{ isEvaluator ? 'Applications' : 'Program A' }}</span>
         </RouterLink>
 
-        <RouterLink v-if="!isMentor && !isEvaluator" to="/challenges" class="nav-item">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M12 3.5L14.7 9L20.8 9.9L16.4 14.2L17.4 20.2L12 17.4L6.6 20.2L7.6 14.2L3.2 9.9L9.3 9L12 3.5Z" />
-            </svg>
-          </span>
+        <RouterLink v-if="!isMentor && !isEvaluator" :to="isAdmin ? '/applications-b' : '/challenges'" class="nav-item">
+          <span class="nav-icon">★</span>
           <span>Program B</span>
         </RouterLink>
 

@@ -602,6 +602,36 @@ const canUpload = computed(() =>
   application.value && ['draft', 'pending_supplement'].includes(application.value.status)
 )
 
+async function loadApplication() {
+  loading.value = true
+  loadError.value = null
+  try {
+    const id = route.params.id as string
+    const appResponse = await applicationsApi.getOne(id)
+    console.log('Raw response:', appResponse)
+    application.value = (appResponse as any).data?.data ?? (appResponse as any).data ?? appResponse
+    documents.value = []
+    evaluations.value = []
+    milestones.value = application.value?.milestones ?? []
+    
+    const [docsResponse, evalsResponse] = await Promise.all([
+      documentsApi.getAll(id),
+      evaluationsApi.getAll(id),
+    ])
+    documents.value = docsResponse.data
+    evaluations.value = evalsResponse.data
+  } catch (e: any) {
+    loadError.value =
+      e?.response?.status === 403
+        ? "You don't have access to this application."
+        : e?.response?.status === 404
+          ? 'This application no longer exists.'
+          : (e?.response?.data?.message ?? 'Failed to load this application.')
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
   loading.value = true
   loadError.value = null
@@ -630,14 +660,12 @@ onMounted(async () => {
 
 async function handleTransition() {
   if (!application.value || !newStatus.value) return
-  console.log('Transitioning to:', newStatus.value)
   transitioning.value = true
   try {
-    const response = await applicationsApi.transition(application.value.id, newStatus.value, decisionNotes.value)
-    console.log('Response:', response)
-    application.value = response.data
+    await applicationsApi.transition(application.value.id, newStatus.value, decisionNotes.value)
     newStatus.value = ''
     decisionNotes.value = ''
+    await loadApplication()
   } catch (e: any) {
     console.log('Error:', e.response?.data)
   } finally {
