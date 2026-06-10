@@ -113,7 +113,10 @@
             </template>
 
             <p v-if="applySuccess" class="success">{{ applySuccess }}</p>
-            <p v-if="applyError" class="error">{{ applyError }}</p>
+            <div v-if="applyError" class="apply-warning">
+              <span class="warning-icon">⚠</span>
+              <p>{{ applyError }}</p>
+            </div>
 
             <div class="modal-actions">
               <button @click="closeApply" class="btn-secondary">{{ applySuccess ? 'Close' : 'Cancel' }}</button>
@@ -168,6 +171,8 @@ import AppLayout from '../components/AppLayout.vue'
 import { useRouter } from 'vue-router'
 import { programsApi } from '../api/programs'
 import { useAuthStore } from '../stores/auth'
+import { useTeamsStore } from '../stores/teams'
+const teamsStore = useTeamsStore()
 const authStore = useAuthStore()
 const isStudent = computed(() => authStore.user?.account_type === 'student')
 
@@ -254,7 +259,10 @@ const applying = ref(false)
 const applyError = ref<string | null>(null)
 const applySuccess = ref<string | null>(null)
 
-onMounted(load)
+onMounted(async () => {
+  await teamsStore.fetchTeams()
+  load()
+})
 
 function formatBudget(b: number | string): string {
   const n = typeof b === 'string' ? parseFloat(b) : b
@@ -311,12 +319,20 @@ async function handleApply() {
     applyError.value = 'This challenge is not linked to a call and cannot accept applications.'
     return
   }
+
+  const team = teamsStore.teams[0]
+  if (!team) {
+    applyError.value = 'You need to be in a team to apply.'
+    return
+  }
+
   applying.value = true
   applyError.value = null
   try {
     await challengeApplicationsApi.apply({
       call_id: activeChallenge.value.call_id,
       challenge_id: activeChallenge.value.id,
+      team_id: team.id,
       motivation_letter: applyForm.value.motivation_letter || undefined,
       solution_proposal: applyForm.value.solution_proposal || undefined,
     })
@@ -361,6 +377,28 @@ select {
   width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #e5e7eb;
   border-radius: 8px; font-size: 0.95rem; box-sizing: border-box;
   background: white; cursor: pointer;
+}
+.apply-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  margin-bottom: 0.75rem;
+}
+.warning-icon {
+  color: #d97706;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.apply-warning p {
+  color: #92400e;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
 }
 select:focus { outline: none; border-color: #6ee7b7; }
 .page-header {

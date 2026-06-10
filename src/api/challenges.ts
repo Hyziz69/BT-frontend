@@ -56,6 +56,7 @@ export const challengesApi = {
 export interface ApplyPayload {
   call_id: string
   challenge_id: string
+  team_id?: string
   motivation_letter?: string
   solution_proposal?: string
 }
