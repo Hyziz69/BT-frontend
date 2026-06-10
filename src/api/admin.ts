@@ -1,5 +1,5 @@
 import api from './axios'
-import type { Application, Call, Program } from '../types'
+import type { Application, Call, Program, Team } from '../types'
 
 export type AdminUser = {
   id: string
@@ -112,10 +112,13 @@ export interface AdminAuditEventsResponse {
 
 export interface AdminAuditEventFilters {
   actions: string[]
-  entity_types: Array<string | {
-    value: string
-    label: string
-  }>
+  entity_types: Array<
+    | string
+    | {
+        value: string
+        label: string
+      }
+  >
 }
 
 export interface AdminAuditEventQuery {
@@ -128,6 +131,15 @@ export interface AdminAuditEventQuery {
   per_page?: number
   page?: number
   sort?: 'newest' | 'oldest'
+}
+
+function unwrapArray<T>(response: any): T[] {
+  if (Array.isArray(response.data)) return response.data
+  if (Array.isArray(response.data?.data)) return response.data.data
+  if (Array.isArray(response.data?.teams)) return response.data.teams
+  if (Array.isArray(response.data?.applications)) return response.data.applications
+
+  return []
 }
 
 export const adminApi = {
@@ -144,7 +156,7 @@ export const adminApi = {
   },
 
   getUsers(params?: Record<string, string>): Promise<AdminUser[]> {
-    return api.get('/admin/users', { params }).then((r) => r.data)
+    return api.get('/admin/users', { params }).then((r) => unwrapArray<AdminUser>(r))
   },
 
   approveUser(id: string) {
@@ -160,9 +172,11 @@ export const adminApi = {
   },
 
   updateUserRole(id: string, accountType: string) {
-    return api.patch(`/admin/users/${id}`, {
-      account_type: accountType,
-    }).then((r) => r.data)
+    return api
+      .patch(`/admin/users/${id}`, {
+        account_type: accountType,
+      })
+      .then((r) => r.data)
   },
 
   updateUser(id: string, payload: { account_type?: string; status?: string }) {
@@ -170,7 +184,7 @@ export const adminApi = {
   },
 
   getPrograms(): Promise<Program[]> {
-    return api.get('/admin/programs').then((r) => r.data)
+    return api.get('/admin/programs').then((r) => unwrapArray<Program>(r))
   },
 
   createProgram(payload: Partial<Program>) {
@@ -182,7 +196,7 @@ export const adminApi = {
   },
 
   getCalls(): Promise<Call[]> {
-    return api.get('/admin/calls').then((r) => r.data)
+    return api.get('/admin/calls').then((r) => unwrapArray<Call>(r))
   },
 
   createCall(payload: any) {
@@ -202,11 +216,15 @@ export const adminApi = {
   },
 
   getApplications(): Promise<AdminApplication[]> {
-    return api.get('/admin/applications').then((r) => r.data)
+    return api.get('/admin/applications').then((r) => unwrapArray<AdminApplication>(r))
   },
 
-  transitionApplication(id: string, status: string) {
-    return api.patch(`/program-a/applications/${id}/transition`, { status }).then((r) => r.data)
+  updateApplicationStatus(applicationId: string, status: string) {
+    return api
+      .patch(`/admin/applications/${applicationId}/status`, {
+        status,
+      })
+      .then((r) => r.data)
   },
 
   assignMentor(applicationId: string, mentorId: string, notes?: string) {
@@ -217,11 +235,8 @@ export const adminApi = {
       })
       .then((r) => r.data)
   },
-    updateApplicationStatus(applicationId: string, status: string) {
-    return api
-      .patch(`/admin/applications/${applicationId}/status`, {
-        status,
-      })
-      .then((r) => r.data)
+
+  getTeams(): Promise<Team[]> {
+    return api.get('/admin/teams').then((r) => unwrapArray<Team>(r))
   },
 }
