@@ -217,4 +217,11 @@ export const adminApi = {
       })
       .then((r) => r.data)
   },
+    updateApplicationStatus(applicationId: string, status: string) {
+    return api
+      .patch(`/admin/applications/${applicationId}/status`, {
+        status,
+      })
+      .then((r) => r.data)
+  },
 }

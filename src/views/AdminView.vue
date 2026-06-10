@@ -594,7 +594,6 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
-import api from '../api/axios'
 import { useAuthStore } from '../stores/auth'
 import {
   adminApi,
@@ -961,9 +960,7 @@ async function changeApplicationStatus(application: AdminApplication) {
   }
 
   await runAction(async () => {
-    await api.patch(`/program-a/applications/${application.id}/transition`, {
-      status,
-    })
+    await adminApi.updateApplicationStatus(application.id, status)
 
     successMessage.value = 'Application status updated.'
     await loadAll()
