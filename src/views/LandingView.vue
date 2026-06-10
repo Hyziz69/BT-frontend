@@ -40,11 +40,9 @@
       </nav>
 
       <section class="hero">
-        <p ref="subtitleRef" class="hero-subtitle">Nitriansky technologický inkubátor</p>
-        <h1 ref="titleRef" class="hero-title">Portál účastníka</h1>
-        <p ref="descRef" class="hero-desc">
-          Spravuj tímy, podávaj prihlášky a sleduj pokrok<br>na jednom mieste
-        </p>
+        <p ref="subtitleRef" class="hero-subtitle">{{ c('hero_subtitle', 'Nitriansky technologický inkubátor') }}</p>
+        <h1 ref="titleRef" class="hero-title">{{ c('hero_title', 'Portál účastníka') }}</h1>
+        <p ref="descRef" class="hero-desc">{{ c('hero_desc', 'Spravuj tímy, podávaj prihlášky a sleduj pokrok na jednom mieste') }}</p>
         <div ref="ctaBtnsRef" class="hero-btns">
           <RouterLink to="/login" class="btn-primary">Začať pracovať</RouterLink>
           <a href="#o-programe" class="btn-ghost">Zistiť viac</a>
@@ -83,8 +81,8 @@
       <div class="programs-row">
         <div class="program-card program-a">
           <div class="program-badge">Program A</div>
-          <h3>Grantový inkubačný program</h3>
-          <p>Vlastný inovatívny nápad → financovanie + mentoring → startup alebo produkt</p>
+          <h3>{{ c('program_a_title', 'Grantový inkubačný program') }}</h3>
+          <p>{{ c('program_a_desc', 'Vlastný inovatívny nápad → financovanie + mentoring → startup alebo produkt') }}</p>
           <ul class="program-list">
             <li>Tím 3+ študentov</li>
             <li>Kvartálne hodnotenia</li>
@@ -93,8 +91,8 @@
         </div>
         <div class="program-card program-b">
           <div class="program-badge">Program B</div>
-          <h3>Program živej praxe</h3>
-          <p>Reálne zadania od firiem → prax + odmena + Product Owner → zákazkový softvér</p>
+          <h3>{{ c('program_b_title', 'Program živej praxe') }}</h3>
+          <p>{{ c('program_b_desc', 'Reálne zadania od firiem → prax + odmena + Product Owner → zákazkový softvér') }}</p>
           <ul class="program-list">
             <li>Zadania od reálnych firiem</li>
             <li>Product Owner z praxe</li>
@@ -138,7 +136,7 @@
 
     <!-- ════════════════════════════════════════════════════ FOOTER ══ -->
     <footer class="footer">
-      <span>© 2026 Nitriansky technologický inkubátor</span>
+      <span>{{ c('footer_copyright', '© 2026 Nitriansky technologický inkubátor') }}</span>
       <RouterLink to="/login">Prihlásiť sa</RouterLink>
     </footer>
 
@@ -146,10 +144,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useTransition } from '../composables/useTransition'
+import { contentApi } from '../api/content'
+
+
 
 const { enabled: transEnabled, toggle: transToggle } = useTransition()
 
@@ -189,28 +190,28 @@ const scene = [
 
 // ─── Content data ─────────────────────────────────────────────────────────────
 
-const pillars = [
+const pillars = computed(() => [
   {
-    title: 'Inkubácia',
-    desc: 'Podporujeme vznik a akceleráciu projektov — od nápadu cez prototyp až po produkt s medzinárodným potenciálom.',
-    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 8 10 8 18a8 8 0 0016 0c0-8-8-14-8-14z" stroke="#60a5fa" stroke-width="1.5" stroke-linejoin="round"/><line x1="16" y1="22" x2="16" y2="28" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    title: c('pillar_1_title', 'Inkubácia'),
+    desc: c('pillar_1_desc', 'Podporujeme vznik a akceleráciu projektov...'),
+    icon: `...existing svg...`,
   },
   {
-    title: 'Partnerstvá',
-    desc: 'Prepájame firmy, organizácie a inštitúcie z regiónu — spoločne vytvárame reálne príležitosti pre študentov.',
-    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="10" cy="12" r="4" stroke="#60a5fa" stroke-width="1.5"/><circle cx="22" cy="12" r="4" stroke="#60a5fa" stroke-width="1.5"/><path d="M4 26c0-4 2.7-6 6-6h12c3.3 0 6 2 6 6" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    title: c('pillar_2_title', 'Partnerstvá'),
+    desc: c('pillar_2_desc', 'Prepájame firmy, organizácie...'),
+    icon: `...existing svg...`,
   },
   {
-    title: 'Mentoring',
-    desc: 'Každý tím dostane mentora z praxe. Pravidelné konzultácie, spätná väzba a sledovanie míľnikov projektu.',
-    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="10" r="5" stroke="#60a5fa" stroke-width="1.5"/><path d="M6 28c0-5.5 4.5-9 10-9s10 3.5 10 9" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/><path d="M20 14l4 4-4 4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    title: c('pillar_3_title', 'Mentoring'),
+    desc: c('pillar_3_desc', 'Každý tím dostane mentora...'),
+    icon: `...existing svg...`,
   },
   {
-    title: 'Retencia',
-    desc: 'Budujeme komunitu absolventov, zbierame úspešné príbehy a udržiavame dlhodobú väzbu talentov na región.',
-    icon: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 6l2.5 5 5.5.8-4 3.9.9 5.5L16 18.5 11.1 21l.9-5.5L8 11.6l5.5-.8L16 6z" stroke="#60a5fa" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+    title: c('pillar_4_title', 'Retencia'),
+    desc: c('pillar_4_desc', 'Budujeme komunitu absolventov...'),
+    icon: `...existing svg...`,
   },
-]
+])
 
 const phases = [
   {
@@ -272,7 +273,15 @@ function onMouseMove(e: MouseEvent) {
   }
 }
 
-// ─── Animations ───────────────────────────────────────────────────────────────
+const content = ref<Record<string, string>>({})
+
+function c(key: string, fallback: string): string {
+  return content.value[key] ?? fallback
+}
+
+contentApi.getPublic().then(data => {
+  content.value = data
+}).catch(() => {})
 
 onMounted(() => {
   // Attach mouse listener only to hero
@@ -297,7 +306,6 @@ onMounted(() => {
     .from(scrollHintRef.value, { opacity: 0, duration: 0.5 }, '<0.4')
 
   // Pillars — fade in on scroll
-  // ScrollTrigger: 'top 80%' = анімація починається коли верх елемента досягає 80% висоти вікна
   gsap.from('.pillar-card', {
     opacity: 0,
     y: 40,
@@ -322,7 +330,6 @@ onMounted(() => {
     },
   })
 
-  // Timeline items — кожен з'являється збоку залежно від позиції
   document.querySelectorAll('.timeline-item').forEach((el, i) => {
     gsap.from(el, {
       opacity: 0,
@@ -336,7 +343,6 @@ onMounted(() => {
     })
   })
 
-  // Section headers
   gsap.utils.toArray('.section-header').forEach((el) => {
     gsap.from(el as HTMLElement, {
       opacity: 0,

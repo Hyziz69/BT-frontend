@@ -35,6 +35,7 @@ const router = createRouter({
     { path: '/admin/reports', name: 'admin-reports', component: () => import('../views/AdminReportsView.vue'), meta: { requiresAuth: true } },
     { path: '/applications-b', name: 'applications-b', component: () => import('../views/program-b/ApplicationsView.vue'), meta: { requiresAuth: true } },
     { path: '/applications-b/:id', name: 'application-b-detail', component: () => import('../views/program-b/ApplicationDetailView.vue'), meta: { requiresAuth: true } },
+    { path: '/admin/content', name: 'admin-content', component: () => import('../views/AdminContentView.vue'), meta: { requiresAuth: true } },
   ],
 })
 

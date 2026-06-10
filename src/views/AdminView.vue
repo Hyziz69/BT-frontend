@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <AppLayout>
     <div class="admin-page">
       <header class="hero">
@@ -13,7 +13,7 @@
         </button>
       </header>
 
-      <nav class="admin-tabs">
+                  <nav class="admin-tabs">
         <RouterLink to="/admin" class="tab active">
           <span class="tab-icon">&#9733;</span>
           Admin Panel
@@ -27,6 +27,11 @@
         <RouterLink to="/admin/reports" class="tab">
           <span class="tab-icon">&#9635;</span>
           Reports
+        </RouterLink>
+
+        <RouterLink to="/admin/content" class="tab">
+          <span class="tab-icon">&#9998;</span>
+          Content
         </RouterLink>
       </nav>
 
