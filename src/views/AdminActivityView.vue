@@ -20,13 +20,18 @@
         </RouterLink>
 
         <RouterLink to="/admin/activity" class="switch-link active-switch">
-          <span>◷</span>
+          <span>⊙</span>
           Activity Log
         </RouterLink>
 
         <RouterLink to="/admin/reports" class="switch-link">
-          <span>&#9635;</span>
+          <span>▣</span>
           Reports
+        </RouterLink>
+
+        <RouterLink to="/admin/content" class="switch-link">
+          <span>✎</span>
+          Content
         </RouterLink>
       </div>
 
@@ -76,7 +81,7 @@
 
       <section class="summary-grid">
         <div class="summary-card">
-          <span class="summary-icon">◷</span>
+          <span class="summary-icon">•</span>
           <div>
             <p>Total logs</p>
             <strong>{{ pagination.total }}</strong>
@@ -84,7 +89,7 @@
         </div>
 
         <div class="summary-card">
-          <span class="summary-icon green">◎</span>
+          <span class="summary-icon green">✓</span>
           <div>
             <p>Shown</p>
             <strong>{{ events.length }}</strong>
@@ -116,12 +121,12 @@
         </div>
 
         <div v-if="loading" class="empty-state">
-          <span>◷</span>
+          <span>•</span>
           <h3>Loading activity...</h3>
         </div>
 
         <div v-else-if="!events.length" class="empty-state">
-          <span>◷</span>
+          <span>•</span>
           <h3>No activity yet</h3>
           <p>
             Audit log saves only new admin actions. Go to Admin page, approve/update/delete something,
@@ -141,7 +146,7 @@
                   <h3>{{ formatAction(event.action) }}</h3>
                   <p>
                     {{ actorName(event) }}
-                    <span>·</span>
+                    <span>•</span>
                     {{ entityName(event.entity_type) }}
                     <template v-if="event.entity_id">
                       #{{ shortId(event.entity_id) }}
@@ -369,7 +374,7 @@ function actionInfo(action: string) {
   const value = action.toLowerCase()
 
   if (value.includes('approve')) {
-    return { icon: '✓', tone: 'success' }
+    return { icon: '•', tone: 'success' }
   }
 
   if (value.includes('reject') || value.includes('delete')) {
@@ -381,14 +386,14 @@ function actionInfo(action: string) {
   }
 
   if (value.includes('assign')) {
-    return { icon: '★', tone: 'assign' }
+    return { icon: '•', tone: 'assign' }
   }
 
   if (value.includes('update') || value.includes('close')) {
-    return { icon: '✎', tone: 'update' }
+    return { icon: '•', tone: 'update' }
   }
 
-  return { icon: '◷', tone: 'default' }
+  return { icon: '•', tone: 'default' }
 }
 
 function formatAction(action: string) {
@@ -427,7 +432,7 @@ function actorName(event: AuditEvent) {
 
 function shortId(value: string | null) {
   if (!value) {
-    return '—'
+    return '-'
   }
 
   return String(value).slice(0, 8)
@@ -435,7 +440,7 @@ function shortId(value: string | null) {
 
 function formatDate(value: string) {
   if (!value) {
-    return '—'
+    return '-'
   }
 
   return new Date(value).toLocaleString()

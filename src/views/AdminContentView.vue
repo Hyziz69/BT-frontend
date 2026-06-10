@@ -14,14 +14,17 @@
           <span>★</span>
           Admin Panel
         </RouterLink>
+
         <RouterLink to="/admin/activity" class="switch-link">
-          <span>◷</span>
+          <span>⊙</span>
           Activity Log
         </RouterLink>
+
         <RouterLink to="/admin/reports" class="switch-link">
           <span>▣</span>
           Reports
         </RouterLink>
+
         <RouterLink to="/admin/content" class="switch-link active-switch">
           <span>✎</span>
           Content

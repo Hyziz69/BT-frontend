@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <AppLayout>
     <div class="reports-page">
       <div class="page-header">
@@ -20,13 +20,18 @@
         </RouterLink>
 
         <RouterLink to="/admin/activity" class="switch-link">
-          <span>◷</span>
+          <span>⊙</span>
           Activity Log
         </RouterLink>
 
         <RouterLink to="/admin/reports" class="switch-link active-switch">
           <span>▣</span>
           Reports
+        </RouterLink>
+
+        <RouterLink to="/admin/content" class="switch-link">
+          <span>✎</span>
+          Content
         </RouterLink>
       </div>
 
@@ -145,12 +150,12 @@ const filters = ref<AdminReportFilters>({
 })
 
 const summaryCards = computed(() => [
-  { label: 'Users', value: summary.value?.users?.total ?? '—', icon: '◎' },
-  { label: 'Programs', value: summary.value?.programs?.total ?? '—', icon: '▣' },
-  { label: 'Calls', value: summary.value?.calls?.total ?? '—', icon: '◷' },
-  { label: 'Applications', value: summary.value?.applications?.total ?? '—', icon: '◈' },
-  { label: 'Teams', value: summary.value?.teams?.total ?? '—', icon: '★' },
-  { label: 'Mentorships', value: summary.value?.mentorships?.total ?? '—', icon: '✓' },
+  { label: 'Users', value: summary.value?.users?.total ?? '-', icon: '●' },
+  { label: 'Programs', value: summary.value?.programs?.total ?? '-', icon: '▣' },
+  { label: 'Calls', value: summary.value?.calls?.total ?? '-', icon: '⊙' },
+  { label: 'Applications', value: summary.value?.applications?.total ?? '-', icon: '◆' },
+  { label: 'Teams', value: summary.value?.teams?.total ?? '-', icon: '★' },
+  { label: 'Mentorships', value: summary.value?.mentorships?.total ?? '-', icon: '✓' },
 ])
 
 onMounted(loadReports)

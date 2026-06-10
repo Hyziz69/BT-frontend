@@ -43,6 +43,7 @@
           <div class="section-title">My applications</div>
           <RouterLink to="/challenges" class="see-all">View all →</RouterLink>
         </div>
+
         <div v-if="myApps.length" class="card-list">
           <component
             :is="isActiveApp(app.status) ? 'RouterLink' : 'div'"
@@ -56,9 +57,12 @@
               <strong>{{ app.challenge?.title ?? 'Challenge' }}</strong>
               <span class="muted">{{ app.challenge?.company?.name ?? '' }}</span>
             </div>
-            <span class="pill" :class="appStatusClass(app.status)">{{ appStatusLabel(app.status) }}</span>
+            <span class="pill" :class="appStatusClass(app.status)">
+              {{ appStatusLabel(app.status) }}
+            </span>
           </component>
         </div>
+
         <RouterLink v-else to="/challenges" class="empty-cta">
           You haven't applied yet — browse open challenges →
         </RouterLink>
@@ -69,6 +73,7 @@
             <div class="section-title">Open challenges</div>
             <RouterLink to="/challenges" class="see-all">View all →</RouterLink>
           </div>
+
           <div class="card-list">
             <RouterLink
               v-for="ch in openChallenges.slice(0, 3)"
@@ -78,7 +83,9 @@
             >
               <div class="row-main">
                 <strong>{{ ch.title }}</strong>
-                <span class="muted">{{ ch.budget ? formatBudget(ch.budget) + ' €' : 'Budget n/a' }}</span>
+                <span class="muted">
+                  {{ ch.budget ? formatBudget(ch.budget) + ' €' : 'Budget n/a' }}
+                </span>
               </div>
               <span class="row-arrow">→</span>
             </RouterLink>
@@ -96,6 +103,7 @@
               <span class="stat-value">{{ myChallenges.length }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">◉</span>
             <div class="stat-info">
@@ -103,6 +111,7 @@
               <span class="stat-value">{{ needsDecision.length }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">◎</span>
             <div class="stat-info">
@@ -118,6 +127,7 @@
             <div class="section-title">Needs your decision</div>
             <RouterLink to="/company" class="see-all">Manage →</RouterLink>
           </div>
+
           <div class="card-list">
             <RouterLink
               v-for="ch in needsDecision"
@@ -139,6 +149,7 @@
           <div class="section-title">My challenges</div>
           <RouterLink to="/company" class="see-all">Manage →</RouterLink>
         </div>
+
         <div v-if="myChallenges.length" class="card-list">
           <RouterLink
             v-for="ch in myChallenges.slice(0, 6)"
@@ -150,9 +161,12 @@
               <strong>{{ ch.title }}</strong>
               <span class="muted">{{ ch.candidates_count ?? 0 }} candidates</span>
             </div>
-            <span class="pill" :class="chStatusClass(ch.status)">{{ chStatusLabel(ch.status) }}</span>
+            <span class="pill" :class="chStatusClass(ch.status)">
+              {{ chStatusLabel(ch.status) }}
+            </span>
           </RouterLink>
         </div>
+
         <RouterLink v-else to="/company" class="empty-cta">
           No challenges yet — create your first →
         </RouterLink>
@@ -168,6 +182,7 @@
               <span class="stat-value">{{ myMentorships.length }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">◉</span>
             <div class="stat-info">
@@ -175,6 +190,7 @@
               <span class="stat-value">{{ activeMentees }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">◎</span>
             <div class="stat-info">
@@ -188,6 +204,7 @@
           <div class="section-title">My mentees</div>
           <RouterLink to="/mentees" class="see-all">View all →</RouterLink>
         </div>
+
         <div v-if="myMentorships.length" class="card-list">
           <RouterLink
             v-for="m in myMentorships.slice(0, 5)"
@@ -199,9 +216,12 @@
               <strong>{{ m.application?.team?.name ?? 'Team' }}</strong>
               <span class="muted">{{ menteeProject(m) }}</span>
             </div>
-            <span class="pill" :class="m.ended_at ? 'grey' : 'green'">{{ m.ended_at ? 'Ended' : 'Active' }}</span>
+            <span class="pill" :class="m.ended_at ? 'grey' : 'green'">
+              {{ m.ended_at ? 'Ended' : 'Active' }}
+            </span>
           </RouterLink>
         </div>
+
         <div v-else class="empty-cta static">
           No mentees yet — they'll appear here once an admin assigns you to a project.
         </div>
@@ -217,6 +237,7 @@
               <span class="stat-value">{{ evaluatorApps.length }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">◉</span>
             <div class="stat-info">
@@ -224,11 +245,14 @@
               <span class="stat-value">{{ pendingReview.length }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">✦</span>
             <div class="stat-info">
               <span class="stat-label">In Evaluation</span>
-              <span class="stat-value">{{ evaluatorApps.filter(a => a.status === 'in_evaluation').length }}</span>
+              <span class="stat-value">
+                {{ evaluatorApps.filter((a) => a.status === 'in_evaluation').length }}
+              </span>
             </div>
           </div>
         </div>
@@ -237,6 +261,7 @@
           <div class="section-title">Pending review</div>
           <RouterLink to="/applications" class="see-all">View all →</RouterLink>
         </div>
+
         <div v-if="pendingReview.length" class="card-list">
           <RouterLink
             v-for="app in pendingReview.slice(0, 5)"
@@ -248,9 +273,12 @@
               <strong>{{ app.team?.name ?? 'Team' }}</strong>
               <span class="muted">{{ app.call?.program?.name ?? 'Program A' }}</span>
             </div>
-            <span class="pill" :class="appStatusClass(app.status)">{{ app.status.replace(/_/g, ' ') }}</span>
+            <span class="pill" :class="appStatusClass(app.status)">
+              {{ app.status.replace(/_/g, ' ') }}
+            </span>
           </RouterLink>
         </div>
+
         <div v-else class="empty-cta static">
           No applications pending review.
         </div>
@@ -266,6 +294,7 @@
               <span class="stat-value">{{ adminStats?.pending_users_count ?? 0 }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">◎</span>
             <div class="stat-info">
@@ -273,6 +302,7 @@
               <span class="stat-value">{{ adminStats?.total_applications ?? 0 }}</span>
             </div>
           </div>
+
           <div class="stat-card">
             <span class="stat-icon">✦</span>
             <div class="stat-info">
@@ -283,6 +313,7 @@
         </div>
 
         <div class="section-title">Quick actions</div>
+
         <div class="quick-links">
           <RouterLink to="/admin" class="quick-card">
             <div class="quick-icon admin">⚙</div>
@@ -298,6 +329,15 @@
             <div class="quick-info">
               <h3>Activity Log</h3>
               <p>Check admin action history and audit records</p>
+            </div>
+            <span class="quick-arrow">→</span>
+          </RouterLink>
+
+          <RouterLink to="/admin/reports" class="quick-card">
+            <div class="quick-icon reports">▣</div>
+            <div class="quick-info">
+              <h3>Reports</h3>
+              <p>Open platform reports and review exported admin data</p>
             </div>
             <span class="quick-arrow">→</span>
           </RouterLink>
@@ -328,34 +368,30 @@ const openChallenges = ref<Challenge[]>([])
 const myChallenges = ref<Challenge[]>([])
 const myMentorships = ref<Mentorship[]>([])
 const evaluatorApps = ref<Application[]>([])
+
 const pendingReview = computed(() =>
-  evaluatorApps.value.filter(a =>
-    ['submitted', 'formally_verified', 'in_evaluation'].includes(a.status)
-  )
+  evaluatorApps.value.filter((a) =>
+    ['submitted', 'formally_verified', 'in_evaluation'].includes(a.status),
+  ),
 )
-const isEvaluator = computed(() => role.value === 'evaluator')
 
 const activeMentees = computed(() => myMentorships.value.filter((m) => !m.ended_at).length)
+
 const totalConsultations = computed(() =>
   myMentorships.value.reduce((s, m) => s + (m.consultations_count ?? 0), 0),
 )
-function menteeProject(m: Mentorship): string {
-  return (
-    m.application?.challenge?.title ??
-    m.application?.call?.program?.name ??
-    'Program A application'
-  )
-}
 
 const role = computed(() => authStore.user?.account_type ?? '')
 const isStudent = computed(() => role.value === 'student')
 const isCompany = computed(() => role.value === 'company_contact')
 const isMentor = computed(() => role.value === 'mentor')
+const isEvaluator = computed(() => role.value === 'evaluator')
 const isAdmin = computed(() => ['nti_admin', 'superadmin'].includes(role.value))
 
 const candidatesWaiting = computed(() =>
   myChallenges.value.reduce((sum, c) => sum + (c.candidates_count ?? 0), 0),
 )
+
 const needsDecision = computed(() =>
   myChallenges.value.filter((c) => (c.candidates_count ?? 0) > 0),
 )
@@ -377,10 +413,10 @@ const roleLabel = computed(() => {
     nti_admin: 'NTI Administrator',
     superadmin: 'Super Admin',
   }
+
   return labels[role.value] ?? role.value
 })
 
-// --- status badges ---
 const APP_STATUS: Record<string, { label: string; cls: string }> = {
   submitted: { label: 'Pending review', cls: 'amber' },
   approved: { label: 'Selected ✓', cls: 'green' },
@@ -389,9 +425,6 @@ const APP_STATUS: Record<string, { label: string; cls: string }> = {
   archived: { label: 'Completed', cls: 'violet' },
   rejected: { label: 'Not selected', cls: 'red' },
 }
-const appStatusLabel = (s: string) => APP_STATUS[s]?.label ?? s
-const appStatusClass = (s: string) => APP_STATUS[s]?.cls ?? 'grey'
-const isActiveApp = (s: string) => ['approved', 'active', 'completed'].includes(s)
 
 const CH_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'grey' },
@@ -401,10 +434,38 @@ const CH_STATUS: Record<string, { label: string; cls: string }> = {
   in_progress: { label: 'In progress', cls: 'green' },
   closed: { label: 'Closed', cls: 'grey' },
 }
-const chStatusLabel = (s: string) => CH_STATUS[s]?.label ?? s
-const chStatusClass = (s: string) => CH_STATUS[s]?.cls ?? 'grey'
 
-const formatBudget = (b: number | string) => Number(b).toLocaleString('sk-SK')
+function menteeProject(m: Mentorship): string {
+  return (
+    m.application?.challenge?.title ??
+    m.application?.call?.program?.name ??
+    'Program A application'
+  )
+}
+
+function appStatusLabel(status: string): string {
+  return APP_STATUS[status]?.label ?? status
+}
+
+function appStatusClass(status: string): string {
+  return APP_STATUS[status]?.cls ?? 'grey'
+}
+
+function isActiveApp(status: string): boolean {
+  return ['approved', 'active', 'completed'].includes(status)
+}
+
+function chStatusLabel(status: string): string {
+  return CH_STATUS[status]?.label ?? status
+}
+
+function chStatusClass(status: string): string {
+  return CH_STATUS[status]?.cls ?? 'grey'
+}
+
+function formatBudget(budget: number | string): string {
+  return Number(budget).toLocaleString('sk-SK')
+}
 
 onMounted(async () => {
   try {
@@ -412,20 +473,25 @@ onMounted(async () => {
       adminStats.value = await adminApi.getDashboard().catch(() => null)
     } else if (isStudent.value) {
       await teamsStore.fetchTeams().catch(() => {})
+
       const [apps, chs] = await Promise.all([
         challengeApplicationsApi.mine().catch(() => ({ applications: [] })),
         challengesApi.list().catch(() => ({ challenges: [] })),
       ])
+
       myApps.value = apps.applications
       openChallenges.value = chs.challenges
     } else if (isCompany.value) {
       const chs = await challengesApi.list().catch(() => ({ challenges: [] }))
+
       myChallenges.value = chs.challenges
     } else if (isMentor.value) {
       const res = await mentorApi.mentorships().catch(() => ({ mentorships: [] }))
+
       myMentorships.value = res.mentorships
     } else if (isEvaluator.value) {
       const res = await applicationsApi.getAll().catch(() => ({ data: [] }))
+
       evaluatorApps.value = (res as any).data ?? (res as any).applications ?? []
     }
   } finally {
@@ -563,6 +629,7 @@ onMounted(async () => {
   color: #16a34a;
   text-decoration: none;
 }
+
 .see-all:hover {
   text-decoration: underline;
 }
@@ -626,12 +693,36 @@ onMounted(async () => {
   font-weight: 600;
   white-space: nowrap;
 }
-.pill.amber { background: #fef3c7; color: #92400e; }
-.pill.green { background: #dcfce7; color: #166534; }
-.pill.violet { background: #ede9fe; color: #6d28d9; }
-.pill.red { background: #fee2e2; color: #991b1b; }
-.pill.blue { background: #dbeafe; color: #1e40af; }
-.pill.grey { background: #f3f4f6; color: #4b5563; }
+
+.pill.amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pill.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pill.violet {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.pill.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pill.blue {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.pill.grey {
+  background: #f3f4f6;
+  color: #4b5563;
+}
 
 .empty-cta {
   display: block;
@@ -644,9 +735,11 @@ onMounted(async () => {
   font-weight: 600;
   text-decoration: none;
 }
+
 .empty-cta:hover {
   background: #f3f4f6;
 }
+
 .empty-cta.static {
   color: #8892a4;
   font-weight: 500;
@@ -695,6 +788,11 @@ onMounted(async () => {
 .quick-icon.activity {
   background: #f5f3ff;
   color: #7c3aed;
+}
+
+.quick-icon.reports {
+  background: #ecfeff;
+  color: #0891b2;
 }
 
 .quick-info {
